@@ -310,10 +310,11 @@ function checkPwd(){
 
 async function loginClient(){
   const tel=document.getElementById('tel-input').value.trim();
-  if(!tel) return;
-  const {data}=await sb.from('clients').select('*').eq('telephone',tel).single();
+  const pin=document.getElementById('pin-input').value.trim();
+  if(!tel||!pin) return showToast('Entrez votre numéro et PIN','#e87070');
+  const {data}=await sb.from('clients').select('*').eq('telephone',tel).eq('pin',pin).single();
   if(data){state.client=data;state.view='client';await loadTransactions(data.id);render();}
-  else showToast('Numéro non trouvé','#e87070');
+  else showToast('Numéro ou PIN incorrect','#e87070');
 }
 
 // ── CAISSE ────────────────────────────────────────────────────────────────────
@@ -380,6 +381,7 @@ function renderClientSearch(){
       </button>
       <div style="text-align:center;font-size:11px;color:#333;margin-bottom:10px">— ou rechercher manuellement —</div>
       <input class="input" type="tel" id="search-tel" placeholder="Numéro de téléphone" style="margin-bottom:8px" onkeydown="if(event.key==='Enter')searchClient()">
+      <input class="input" type="password" id="pin-input" placeholder="Votre code PIN" maxlength="4" onkeydown="if(event.key==='Enter')loginClient()">
       <div style="display:flex;gap:8px">
         <button onclick="searchClient()" style="flex:1;background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:10px;padding:10px;font-size:13px;cursor:pointer">Rechercher</button>
         <button onclick="showNewClient()" style="flex:1;background:rgba(200,149,108,.1);border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:10px;padding:10px;font-size:13px;cursor:pointer">+ Nouveau</button>
@@ -387,6 +389,7 @@ function renderClientSearch(){
       <div id="new-client-form" style="display:none;margin-top:12px">
         <input class="input" type="text" id="new-nom" placeholder="Prénom et nom" style="margin-bottom:8px">
         <input class="input" type="tel" id="new-tel" placeholder="Numéro de téléphone">
+<input class="input" type="password" id="new-pin" placeholder="Code PIN à 4 chiffres" maxlength="4" pattern="[0-9]{4}">
         <button onclick="createClient()" class="btn-primary" style="margin-top:8px">Créer le compte</button>
       </div>
     </div>`;
@@ -596,7 +599,9 @@ async function createClient(){
   const nom=document.getElementById('new-nom')?.value?.trim();
   const tel=document.getElementById('new-tel')?.value?.trim();
   if(!nom||!tel) return showToast('Remplissez nom et téléphone','#e87070');
-  const {data,error}=await sb.from('clients').insert({nom,telephone:tel,points:0}).select().single();
+  const pin=document.getElementById('new-pin')?.value?.trim();
+if(!pin||pin.length!==4) return showToast('PIN doit faire 4 chiffres','#e87070');
+const {data,error}=await sb.from('clients').insert({nom,telephone:tel,points:0,pin}).select().single();
   if(error) return showToast('Numéro déjà utilisé ou erreur','#e87070');
   state.client=data;state.transactions=[];
   showToast(`✅ ${nom} inscrit !`,'#8fc98a');

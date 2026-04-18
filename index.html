@@ -222,7 +222,6 @@ async function generateQR(clientId){
   await new Promise(r=>setTimeout(r,50));
   const canvas=document.getElementById('qr-canvas-'+clientId);
   if(!canvas) return;
-  canvas.innerHTML='';
 new QRCode(canvas,{
   text:'FL-'+clientId,
   width:180,height:180,
@@ -508,7 +507,7 @@ function renderClient(){
       <!-- QR CODE -->
       <div class="qr-section">
         <div style="font-size:11px;letter-spacing:2px;color:#444;text-transform:uppercase">Mon QR code</div>
-        <canvas id="qr-canvas-${state.client.id}" class="qr-canvas" width="180" height="180"></canvas>
+        <div id="qr-canvas-${state.client.id}" class="qr-canvas"></div>
         <div style="font-size:12px;color:#555;text-align:center">Montrez ce code au caissier pour être identifié instantanément</div>
         <button class="print-btn" onclick="printQR()">🖨️ Imprimer ma carte</button>
       </div>

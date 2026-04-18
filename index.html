@@ -371,7 +371,14 @@ function renderClientSearch(){
         <div style="font-size:13px;color:#7ec87e;font-weight:600">✓ Client identifié</div>
         <div style="font-size:12px;color:#555;margin-top:2px">${state.client.nom} · ${state.client.telephone}</div>
       </div>
-      <button onclick="clearClient()" style="background:none;border:none;color:#444;font-size:12px;cursor:pointer">Changer</button>
+      <div style="display:flex;gap:8px;align-items:center">
+  <button onclick="showChangePIN()" style="background:none;border:none;color:#c8956c;font-size:12px;cursor:pointer">PIN</button>
+  <button onclick="clearClient()" style="background:none;border:none;color:#444;font-size:12px;cursor:pointer">Changer</button>
+</div>
+<div id="change-pin-form" style="display:none;margin-top:10px">
+  <input class="input" type="password" id="new-pin-client" placeholder="Nouveau PIN à 4 chiffres" maxlength="4">
+  <button onclick="updatePIN()" class="btn-primary" style="margin-top:6px">Enregistrer le PIN</button>
+</div>
     </div>`;
   return `
     <div style="background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:16px 18px;margin-bottom:16px">
@@ -580,7 +587,20 @@ function switchView(v){
 function addToCart(id){state.cart[id]=(state.cart[id]||0)+1;render();}
 function removeFromCart(id){state.cart[id]=Math.max(0,(state.cart[id]||0)-1);state.usePoints=0;render();}
 function goToSummary(){state.step='summary';render();}
-function clearClient(){state.client=null;state.transactions=[];render();}
+function showChangePIN(){
+  const f=document.getElementById('change-pin-form');
+  if(f) f.style.display=f.style.display==='none'?'block':'none';
+}
+
+async function updatePIN(){
+  const pin=document.getElementById('new-pin-client')?.value?.trim();
+  if(!pin||pin.length!==4) return showToast('PIN doit faire 4 chiffres','#e87070');
+  await sb.from('clients').update({pin}).eq('id',state.client.id);
+  state.client.pin=pin;
+  showToast('✅ PIN mis à jour !','#8fc98a');
+  document.getElementById('change-pin-form').style.display='none';
+}
+ function clearClient(){state.client=null;state.transactions=[];render();}
 
 async function searchClient(){
   const tel=document.getElementById('search-tel')?.value?.trim();

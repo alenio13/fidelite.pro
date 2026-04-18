@@ -222,12 +222,13 @@ async function generateQR(clientId){
   await new Promise(r=>setTimeout(r,50));
   const canvas=document.getElementById('qr-canvas-'+clientId);
   if(!canvas) return;
-  new QRCode(canvas, {
-    text: 'FL-' + clientId,
-    width: 180, height: 180,
-    colorDark: '#1a1410',
-    colorLight: '#ffffff'
-  });
+  canvas.innerHTML='';
+new QRCode(canvas,{
+  text:'FL-'+clientId,
+  width:180,height:180,
+  colorDark:'#000000',
+  colorLight:'#ffffff'
+});
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────

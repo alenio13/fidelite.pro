@@ -5,152 +5,239 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Carte Fidélité</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0a0a0a; color: #f0ece4; font-family: 'Helvetica Neue', sans-serif; min-height: 100vh; }
-  .app { max-width: 460px; margin: 0 auto; padding: 24px 16px 80px; }
-  .header { text-align: center; margin-bottom: 20px; }
-  .header-sub { font-size: 10px; letter-spacing: 4px; color: #333; text-transform: uppercase; margin-bottom: 4px; }
-  .header-title { font-size: 24px; letter-spacing: 2px; color: #e8e2d8; }
-  .badge { background: rgba(200,149,108,0.15); color: #c8956c; border: 1px solid rgba(200,149,108,0.3); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 700; font-family: monospace; }
-  .badge-argent { background: rgba(176,190,197,0.15); color: #b0bec5; border-color: rgba(176,190,197,0.3); }
-  .badge-or { background: rgba(249,208,86,0.15); color: #f9d056; border-color: rgba(249,208,86,0.3); }
-  .badge-platine { background: rgba(224,224,255,0.15); color: #e0e0ff; border-color: rgba(224,224,255,0.3); }
-  .points-strip { background: #111; border: 1px solid rgba(200,149,108,0.1); border-radius: 12px; padding: 10px 18px; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: center; }
-  .pts-val { font-size: 16px; font-weight: 700; color: #c8956c; font-family: monospace; }
-  .view-switch { display: flex; gap: 8px; margin-bottom: 20px; }
-  .view-btn { flex: 1; padding: 12px 0; border-radius: 14px; background: #0d0d0d; border: 1px solid #141414; color: #2e2e2e; font-size: 14px; cursor: pointer; transition: all .2s; }
-  .view-btn div:last-child { font-size: 10px; margin-top: 2px; opacity: .6; }
-  .view-btn.active { background: #1a1a1a; color: #e0ddd8; border-color: #333; }
-  .view-btn.active-client { background: #1a1a1a; border-color: rgba(200,149,108,0.4); }
-  .tabs { display: flex; gap: 5px; background: #111; border-radius: 14px; padding: 5px; margin-bottom: 24px; }
-  .tab { flex: 1; padding: 10px 4px; font-size: 12px; font-weight: 400; background: transparent; border: 1px solid transparent; color: #555; border-radius: 10px; cursor: pointer; transition: all .2s; }
-  .tab.active { background: #1e1e1e; font-weight: 700; }
-  .card-visual { background: linear-gradient(135deg, #1a1410 0%, #0d0d0d 100%); border-radius: 24px; padding: 28px 28px 22px; box-shadow: 0 0 0 1px rgba(200,149,108,0.2), 0 24px 60px rgba(0,0,0,0.6); position: relative; overflow: hidden; margin-bottom: 18px; }
-  .card-glow { position: absolute; top: -60px; right: -60px; width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle, rgba(200,149,108,0.1) 0%, transparent 70%); pointer-events: none; }
-  .card-pts { font-size: 52px; font-weight: 800; letter-spacing: -3px; line-height: 1; text-align: center; margin-bottom: 4px; }
-  .card-pts-label { font-size: 11px; color: #555; letter-spacing: 2px; text-transform: uppercase; text-align: center; }
-  .card-value { font-size: 13px; color: #7ec87e; text-align: center; margin-top: 8px; font-weight: 500; }
-  .progress-bar { height: 4px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; margin: 14px 0 6px; }
-  .progress-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
-  .section-title { font-size: 10px; letter-spacing: 3px; color: #444; text-transform: uppercase; margin-bottom: 10px; }
-  .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
-  .product-btn { background: #111; border: 1px solid #1e1e1e; border-radius: 14px; padding: 12px 10px; cursor: pointer; text-align: left; transition: all .18s; position: relative; }
-  .product-btn.selected { background: #181818; }
-  .product-icon { font-size: 24px; margin-bottom: 5px; }
-  .product-name { font-size: 13px; color: #e0ddd8; font-weight: 500; margin-bottom: 4px; }
-  .product-info { display: flex; justify-content: space-between; align-items: center; }
-  .product-price { font-size: 12px; color: #777; }
-  .qty-badge { position: absolute; top: 8px; right: 8px; background: #c8956c; color: #0a0a0a; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
-  .cart-bar { position: sticky; bottom: 0; padding-top: 12px; }
-  .cart-btn { width: 100%; background: #c8956c; color: #0a0a0a; border: none; border-radius: 14px; padding: 15px 20px; font-size: 15px; font-weight: 800; cursor: pointer; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -20px 40px #0a0a0a; }
-  .summary-box { background: #111; border: 1px solid rgba(200,149,108,0.2); border-radius: 16px; padding: 18px; margin-bottom: 16px; }
-  .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid #161616; font-size: 13px; }
-  .summary-row:last-child { border-bottom: none; }
-  .summary-total { font-size: 18px; font-weight: 700; }
-  .back-btn { background: none; border: none; color: #666; font-size: 13px; cursor: pointer; margin-bottom: 18px; padding: 0; }
-  .pts-earned-box { background: #0d1a0d; border: 1px solid #1a2e1a; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; }
-  .use-pts-box { background: #0d0d0d; border: 1px solid #1e1e1e; border-radius: 14px; padding: 16px; margin-bottom: 14px; }
-  .use-pts-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: #ccc; }
-  input[type=range] { width: 100%; appearance: none; height: 4px; border-radius: 4px; background: #2a2a2a; outline: none; accent-color: #c8956c; cursor: pointer; }
-  .quick-btns { display: flex; gap: 6px; margin-top: 10px; }
-  .quick-btn { flex: 1; background: #1a1a1a; border: 1px solid #2a2a2a; color: #555; border-radius: 8px; padding: 6px 0; font-size: 11px; cursor: pointer; transition: all .15s; }
-  .quick-btn.active { background: rgba(200,149,108,0.15); border-color: #c8956c; color: #c8956c; }
-  .reward-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .reward-card { background: #111; border: 1px solid #2a2a2a; border-radius: 16px; padding: 16px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; transition: all .2s; }
-  .reward-card.locked { opacity: .4; }
-  .reward-icon { font-size: 28px; }
-  .reward-name { font-size: 13px; color: #ddd; font-weight: 500; }
-  .reward-btn { background: #c8a97e; color: #0a0a0a; border: none; border-radius: 20px; padding: 7px 0; font-size: 12px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 2px; }
-  .tx-list { display: flex; flex-direction: column; gap: 7px; }
-  .tx-row { background: #111; border: 1px solid #1c1c1c; border-radius: 14px; padding: 13px 18px; display: flex; justify-content: space-between; align-items: center; }
-  .tx-label { font-size: 13px; color: #ddd; margin-bottom: 3px; }
-  .tx-date { font-size: 11px; color: #444; }
-  .tx-pts { font-family: monospace; font-weight: 700; font-size: 14px; }
-  .pay-btn { width: 100%; background: #c8956c; color: #0a0a0a; border: none; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 800; cursor: pointer; }
-  .done-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; gap: 14px; }
-  .empty { text-align: center; color: #252525; font-size: 13px; padding: 16px 0; }
-  .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: #1a1a1a; border-radius: 30px; padding: 12px 26px; font-size: 14px; font-weight: 600; box-shadow: 0 8px 40px rgba(0,0,0,0.6); z-index: 999; white-space: nowrap; animation: toastIn .3s ease; }
-  @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(-10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
-  .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 16px; padding: 24px; }
-  .login-box { background: #111; border: 1px solid #1e1e1e; border-radius: 20px; padding: 32px 28px; width: 100%; max-width: 380px; }
-  .login-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; text-align: center; }
-  .login-sub { font-size: 13px; color: #555; text-align: center; margin-bottom: 24px; }
-  .input { background: #0d0d0d; border: 1px solid #2a2a2a; border-radius: 12px; padding: 13px 16px; color: #e0ddd8; font-size: 14px; outline: none; width: 100%; margin-bottom: 12px; }
-  .input::placeholder { color: #333; }
-  .btn-primary { width: 100%; background: #c8956c; color: #0a0a0a; border: none; border-radius: 12px; padding: 14px; font-size: 14px; font-weight: 700; cursor: pointer; }
-  .client-search { background: #111; border: 1px solid #1e1e1e; border-radius: 16px; padding: 16px 18px; margin-bottom: 16px; }
-  .client-found { background: #0d1a0d; border: 1px solid #1a2e1a; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-  .levels-box { background: #111; border: 1px solid #1a1a1a; border-radius: 16px; padding: 16px 20px; width: 100%; }
-  .level-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-  .level-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .info-msg { background: #0d0d0d; border-radius: 10px; padding: 10px 14px; font-size: 12px; color: #444; line-height: 1.6; margin-top: 14px; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0a;color:#f0ece4;font-family:'Helvetica Neue',sans-serif;min-height:100vh}
+  .app{max-width:460px;margin:0 auto;padding:24px 16px 80px}
+  .header{text-align:center;margin-bottom:20px}
+  .header-sub{font-size:10px;letter-spacing:4px;color:#333;text-transform:uppercase;margin-bottom:4px}
+  .header-title{font-size:24px;letter-spacing:2px;color:#e8e2d8}
+  .badge{background:rgba(200,149,108,.15);color:#c8956c;border:1px solid rgba(200,149,108,.3);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;font-family:monospace}
+  .badge-argent{background:rgba(176,190,197,.15);color:#b0bec5;border-color:rgba(176,190,197,.3)}
+  .badge-or{background:rgba(249,208,86,.15);color:#f9d056;border-color:rgba(249,208,86,.3)}
+  .badge-platine{background:rgba(224,224,255,.15);color:#e0e0ff;border-color:rgba(224,224,255,.3)}
+  .pts-strip{background:#111;border:1px solid rgba(200,149,108,.1);border-radius:12px;padding:10px 18px;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center}
+  .pts-val{font-size:16px;font-weight:700;color:#c8956c;font-family:monospace}
+  .view-switch{display:flex;gap:8px;margin-bottom:20px}
+  .view-btn{flex:1;padding:12px 0;border-radius:14px;background:#0d0d0d;border:1px solid #141414;color:#2e2e2e;font-size:14px;cursor:pointer;transition:all .2s}
+  .view-btn div:last-child{font-size:10px;margin-top:2px;opacity:.6}
+  .view-btn.active{background:#1a1a1a;color:#e0ddd8;border-color:#333}
+  .view-btn.active-client{background:#1a1a1a;border-color:rgba(200,149,108,.4)}
+  .tabs{display:flex;gap:5px;background:#111;border-radius:14px;padding:5px;margin-bottom:24px}
+  .tab{flex:1;padding:10px 4px;font-size:12px;font-weight:400;background:transparent;border:1px solid transparent;color:#555;border-radius:10px;cursor:pointer;transition:all .2s}
+  .tab.active{background:#1e1e1e;font-weight:700}
+  .section-title{font-size:10px;letter-spacing:3px;color:#444;text-transform:uppercase;margin-bottom:10px}
+  .product-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+  .product-btn{background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:12px 10px;cursor:pointer;text-align:left;transition:all .18s;position:relative}
+  .product-btn.selected{background:#181818}
+  .product-icon{font-size:24px;margin-bottom:5px}
+  .product-name{font-size:13px;color:#e0ddd8;font-weight:500;margin-bottom:4px}
+  .product-info{display:flex;justify-content:space-between;align-items:center}
+  .product-price{font-size:12px;color:#777}
+  .qty-badge{position:absolute;top:8px;right:8px;background:#c8956c;color:#0a0a0a;border-radius:50%;width:22px;height:22px;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .cart-bar{position:sticky;bottom:0;padding-top:12px}
+  .cart-btn{width:100%;background:#c8956c;color:#0a0a0a;border:none;border-radius:14px;padding:15px 20px;font-size:15px;font-weight:800;cursor:pointer;display:flex;justify-content:space-between;align-items:center;box-shadow:0 -20px 40px #0a0a0a}
+  .summary-box{background:#111;border:1px solid rgba(200,149,108,.2);border-radius:16px;padding:18px;margin-bottom:16px}
+  .summary-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #161616;font-size:13px}
+  .summary-row:last-child{border-bottom:none}
+  .back-btn{background:none;border:none;color:#666;font-size:13px;cursor:pointer;margin-bottom:18px;padding:0}
+  .pts-earned-box{background:#0d1a0d;border:1px solid #1a2e1a;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between}
+  .use-pts-box{background:#0d0d0d;border:1px solid #1e1e1e;border-radius:14px;padding:16px;margin-bottom:14px}
+  input[type=range]{width:100%;appearance:none;height:4px;border-radius:4px;background:#2a2a2a;outline:none;accent-color:#c8956c;cursor:pointer}
+  .quick-btns{display:flex;gap:6px;margin-top:10px}
+  .quick-btn{flex:1;background:#1a1a1a;border:1px solid #2a2a2a;color:#555;border-radius:8px;padding:6px 0;font-size:11px;cursor:pointer;transition:all .15s}
+  .quick-btn.active{background:rgba(200,149,108,.15);border-color:#c8956c;color:#c8956c}
+  .tx-list{display:flex;flex-direction:column;gap:7px}
+  .tx-row{background:#111;border:1px solid #1c1c1c;border-radius:14px;padding:13px 18px;display:flex;justify-content:space-between;align-items:center}
+  .pay-btn{width:100%;background:#c8956c;color:#0a0a0a;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;cursor:pointer}
+  .done-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:14px}
+  .empty{text-align:center;color:#252525;font-size:13px;padding:16px 0}
+  .toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;border-radius:30px;padding:12px 26px;font-size:14px;font-weight:600;box-shadow:0 8px 40px rgba(0,0,0,.6);z-index:999;white-space:nowrap;animation:toastIn .3s ease}
+  @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  .login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:24px}
+  .login-box{background:#111;border:1px solid #1e1e1e;border-radius:20px;padding:32px 28px;width:100%;max-width:380px}
+  .input{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:12px;padding:13px 16px;color:#e0ddd8;font-size:14px;outline:none;width:100%;margin-bottom:12px}
+  .input::placeholder{color:#333}
+  .btn-primary{width:100%;background:#c8956c;color:#0a0a0a;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer}
+  .client-found{background:#0d1a0d;border:1px solid #1a2e1a;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+  .card-visual{background:linear-gradient(135deg,#1a1410 0%,#0d0d0d 100%);border-radius:24px;padding:28px 28px 22px;position:relative;overflow:hidden;margin-bottom:18px}
+  .card-glow{position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;pointer-events:none}
+  .progress-bar{height:4px;background:rgba(255,255,255,.05);border-radius:4px;overflow:hidden;margin:14px 0 6px}
+  .progress-fill{height:100%;border-radius:4px;transition:width 1s ease}
+  .levels-box{background:#111;border:1px solid #1a1a1a;border-radius:16px;padding:16px 20px;width:100%}
+
+  /* ── SCANNER ── */
+  .scan-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+  .scan-box{position:relative;width:280px;height:280px;border-radius:20px;overflow:hidden}
+  .scan-box video{width:100%;height:100%;object-fit:cover}
+  .scan-corners{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+  .scan-corners::before,.scan-corners::after{content:'';position:absolute;width:40px;height:40px;border-color:#c8956c;border-style:solid}
+  .scan-corners::before{top:10px;left:10px;border-width:3px 0 0 3px;border-radius:6px 0 0 0}
+  .scan-corners::after{bottom:10px;right:10px;border-width:0 3px 3px 0;border-radius:0 0 6px 0}
+  .scan-line{position:absolute;width:100%;height:2px;background:linear-gradient(90deg,transparent,#c8956c,transparent);animation:scanAnim 2s linear infinite}
+  @keyframes scanAnim{0%{top:10%}100%{top:90%}}
+  .scan-close{background:#1a1a1a;border:1px solid #333;color:#ccc;border-radius:12px;padding:12px 28px;font-size:14px;cursor:pointer}
+  .scan-hint{font-size:13px;color:#666;text-align:center;max-width:260px}
+
+  /* ── QR CODE ── */
+  .qr-section{background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:20px;margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:12px}
+  .qr-canvas{border-radius:12px;background:#fff;padding:10px}
+  .print-btn{background:#1a1a1a;border:1px solid #2a2a2a;color:#c8956c;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer}
+
+  /* Scan input douchette (invisible) */
+  #barcode-input{position:fixed;opacity:0;pointer-events:none;top:-999px}
 </style>
 </head>
 <body>
-
 <div id="root"></div>
+<input id="barcode-input" type="text" autocomplete="off">
 
 <script>
-// ── CONFIG SUPABASE ──────────────────────────────────────────────────────────
-const SUPABASE_URL = 'https://tgrqfrijwjonrehixgre.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Dk_GsamMzY1KRRIELRxngQ_xsH1Xxkr';
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'METTEZ_VOTRE_URL_ICI';
+const SUPABASE_KEY = 'METTEZ_VOTRE_CLE_ICI';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ── DONNÉES ──────────────────────────────────────────────────────────────────
+// ── DONNÉES ───────────────────────────────────────────────────────────────────
 const CATALOG = [
-  { id:1,  name:"Expresso",     price:2.50,  pts:5,  icon:"☕", cat:"Boissons" },
-  { id:2,  name:"Cappuccino",   price:3.80,  pts:8,  icon:"🥛", cat:"Boissons" },
-  { id:3,  name:"Jus d'orange", price:4.20,  pts:9,  icon:"🍊", cat:"Boissons" },
-  { id:4,  name:"Croissant",    price:1.80,  pts:4,  icon:"🥐", cat:"Snacks"   },
-  { id:5,  name:"Sandwich",     price:6.50,  pts:13, icon:"🥪", cat:"Snacks"   },
-  { id:6,  name:"Salade",       price:9.00,  pts:18, icon:"🥗", cat:"Plats"    },
-  { id:7,  name:"Burger",       price:12.00, pts:24, icon:"🍔", cat:"Plats"    },
-  { id:8,  name:"Pizza",        price:13.50, pts:27, icon:"🍕", cat:"Plats"    },
-  { id:9,  name:"Tiramisu",     price:5.50,  pts:11, icon:"🍰", cat:"Desserts" },
-  { id:10, name:"Glace",        price:3.50,  pts:7,  icon:"🍦", cat:"Desserts" },
+  {id:1, name:"Expresso",     price:2.50,  pts:5,  icon:"☕", cat:"Boissons"},
+  {id:2, name:"Cappuccino",   price:3.80,  pts:8,  icon:"🥛", cat:"Boissons"},
+  {id:3, name:"Jus d'orange", price:4.20,  pts:9,  icon:"🍊", cat:"Boissons"},
+  {id:4, name:"Croissant",    price:1.80,  pts:4,  icon:"🥐", cat:"Snacks"},
+  {id:5, name:"Sandwich",     price:6.50,  pts:13, icon:"🥪", cat:"Snacks"},
+  {id:6, name:"Salade",       price:9.00,  pts:18, icon:"🥗", cat:"Plats"},
+  {id:7, name:"Burger",       price:12.00, pts:24, icon:"🍔", cat:"Plats"},
+  {id:8, name:"Pizza",        price:13.50, pts:27, icon:"🍕", cat:"Plats"},
+  {id:9, name:"Tiramisu",     price:5.50,  pts:11, icon:"🍰", cat:"Desserts"},
+  {id:10,name:"Glace",        price:3.50,  pts:7,  icon:"🍦", cat:"Desserts"},
 ];
 const REWARDS = [
-  { id:1, name:"Café offert",    pts:50,   icon:"☕", color:"#c8a97e" },
-  { id:2, name:"Dessert offert", pts:120,  icon:"🍰", color:"#e8a598" },
-  { id:3, name:"Réduction 10%", pts:200,  icon:"🏷️", color:"#8fc98a" },
-  { id:4, name:"Menu gratuit",   pts:400,  icon:"🍽️", color:"#7eb8d4" },
-  { id:5, name:"Week-end spa",   pts:1000, icon:"✨", color:"#b59bd4" },
+  {id:1, name:"Café offert",    pts:50,   icon:"☕", color:"#c8a97e"},
+  {id:2, name:"Dessert offert", pts:120,  icon:"🍰", color:"#e8a598"},
+  {id:3, name:"Réduction 10%", pts:200,  icon:"🏷️", color:"#8fc98a"},
+  {id:4, name:"Menu gratuit",   pts:400,  icon:"🍽️", color:"#7eb8d4"},
+  {id:5, name:"Week-end spa",   pts:1000, icon:"✨", color:"#b59bd4"},
 ];
 const LEVELS = [
-  { name:"Bronze",  min:0,    max:499,      color:"#c8956c" },
-  { name:"Argent",  min:500,  max:999,      color:"#b0bec5" },
-  { name:"Or",      min:1000, max:1999,     color:"#f9d056" },
-  { name:"Platine", min:2000, max:2500, color:"#e0e0ff" },
+  {name:"Bronze",  min:0,    max:499,      color:"#c8956c"},
+  {name:"Argent",  min:500,  max:999,      color:"#b0bec5"},
+  {name:"Or",      min:1000, max:1999,     color:"#f9d056"},
+  {name:"Platine", min:2000, max:Infinity, color:"#e0e0ff"},
 ];
 const PT_VAL = 0.01;
-const CATS = [...new Set(CATALOG.map(p => p.cat))];
-const CAISSIER_PWD = "0123456789"; // ← Changez ce mot de passe !
+const CATS = [...new Set(CATALOG.map(p=>p.cat))];
+const CAISSIER_PWD = "caisse2024";
 
-function getLevel(p) { return LEVELS.find(l => p >= l.min && p <= l.max) || LEVELS[0]; }
+function getLevel(p){return LEVELS.find(l=>p>=l.min&&p<=l.max)||LEVELS[0]}
+function getBadgeClass(pts){const n=getLevel(pts).name;return n==='Argent'?'badge badge-argent':n==='Or'?'badge badge-or':n==='Platine'?'badge badge-platine':'badge'}
 
-// ── ÉTAT GLOBAL ──────────────────────────────────────────────────────────────
+// ── ÉTAT ──────────────────────────────────────────────────────────────────────
 let state = {
-  view: 'login',        // login | cashier | client
-  cashierOk: false,
-  client: null,         // client sélectionné
-  clientTel: '',
-  transactions: [],
-  cart: {},
-  usePoints: 0,
-  step: 'catalog',      // catalog | summary | done
-  clientTab: 'card',    // card | history
-  toast: null,
+  view:'login', cashierOk:false,
+  client:null, transactions:[],
+  cart:{}, usePoints:0,
+  step:'catalog',
+  clientTab:'card',
+  scanning:false,
+  toast:null,
 };
 
-// ── RENDU ────────────────────────────────────────────────────────────────────
-function render() {
-  const root = document.getElementById('root');
-  if (state.view === 'login') { root.innerHTML = renderLogin(); return; }
-  root.innerHTML = `
-    ${state.toast ? `<div class="toast" style="border:1px solid ${state.toast.color}77;color:${state.toast.color}">${state.toast.msg}</div>` : ''}
+// ── SCANNER QR (caméra) ───────────────────────────────────────────────────────
+let scanVideo=null, scanCanvas=null, scanCtx=null, scanAF=null;
+
+async function startScan(){
+  state.scanning=true; render();
+  await new Promise(r=>setTimeout(r,100));
+  scanVideo=document.getElementById('scan-video');
+  scanCanvas=document.getElementById('scan-canvas');
+  if(!scanVideo||!scanCanvas) return;
+  scanCtx=scanCanvas.getContext('2d');
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    scanVideo.srcObject=stream;
+    scanVideo.play();
+    scanVideo.addEventListener('loadedmetadata',()=>{ scanLoop(); });
+  } catch(e){ showToast('Caméra non disponible','#e87070'); stopScan(); }
+}
+
+function scanLoop(){
+  if(!state.scanning) return;
+  if(scanVideo.readyState===scanVideo.HAVE_ENOUGH_DATA){
+    scanCanvas.width=scanVideo.videoWidth;
+    scanCanvas.height=scanVideo.videoHeight;
+    scanCtx.drawImage(scanVideo,0,0);
+    const img=scanCtx.getImageData(0,0,scanCanvas.width,scanCanvas.height);
+    const code=jsQR(img.data,img.width,img.height);
+    if(code && code.data.startsWith('FL-')){
+      stopScan();
+      handleQRScan(code.data);
+      return;
+    }
+  }
+  scanAF=requestAnimationFrame(scanLoop);
+}
+
+function stopScan(){
+  state.scanning=false;
+  if(scanAF) cancelAnimationFrame(scanAF);
+  if(scanVideo&&scanVideo.srcObject) scanVideo.srcObject.getTracks().forEach(t=>t.stop());
+  render();
+}
+
+async function handleQRScan(qrData){
+  // qrData = "FL-<client_id>"
+  const clientId=qrData.replace('FL-','');
+  const {data}=await sb.from('clients').select('*').eq('id',clientId).single();
+  if(data){
+    state.client=data;
+    await loadTransactions(data.id);
+    showToast(`✅ ${data.nom} identifié !`,'#8fc98a');
+    render();
+  } else {
+    showToast('QR code non reconnu','#e87070');
+  }
+}
+
+// ── DOUCHETTE (lecteur code barre) ────────────────────────────────────────────
+let barcodeBuffer='', barcodeTimer=null;
+document.addEventListener('keydown', e=>{
+  // Si on est sur la vue caisse et qu'un champ n'est pas focus
+  if(state.view!=='cashier'||!state.cashierOk) return;
+  const active=document.activeElement;
+  if(active&&(active.tagName==='INPUT'||active.tagName==='TEXTAREA')) return;
+  if(e.key==='Enter'){
+    if(barcodeBuffer.startsWith('FL-')) handleQRScan(barcodeBuffer);
+    barcodeBuffer='';
+  } else if(e.key.length===1){
+    barcodeBuffer+=e.key;
+    clearTimeout(barcodeTimer);
+    barcodeTimer=setTimeout(()=>{ barcodeBuffer=''; },200);
+  }
+});
+
+// ── GÉNÉRATION QR CODE ────────────────────────────────────────────────────────
+async function generateQR(clientId){
+  await new Promise(r=>setTimeout(r,50));
+  const canvas=document.getElementById('qr-canvas-'+clientId);
+  if(!canvas) return;
+  QRCode.toCanvas(canvas,'FL-'+clientId,{
+    width:180, margin:1,
+    color:{dark:'#1a1410',light:'#ffffff'}
+  });
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render(){
+  const root=document.getElementById('root');
+  if(state.scanning){ root.innerHTML=renderScanner(); return; }
+  if(state.view==='login'){ root.innerHTML=renderLogin(); return; }
+  const lv=state.client?getLevel(state.client.points):getLevel(0);
+  root.innerHTML=`
+    ${state.toast?`<div class="toast" style="border:1px solid ${state.toast.color}77;color:${state.toast.color}">${state.toast.msg}</div>`:''}
     <div class="app">
-      <div class="header"><div class="header-sub">programme</div><div class="header-title">Maison Loyale</div></div>
+      <div class="header"><div class="header-sub">programme</div><div class="header-title">La craquante de lesigny</div></div>
       <div class="view-switch">
         <button class="view-btn ${state.view==='cashier'?'active':''}" onclick="switchView('cashier')">
           <div>🏪 Vue Caisse</div><div>Vue commerçant</div>
@@ -159,92 +246,101 @@ function render() {
           <div>👤 Carte client</div><div>Vue client</div>
         </button>
       </div>
-      ${state.client ? `
-        <div class="points-strip">
+      ${state.client?`
+        <div class="pts-strip">
           <div style="display:flex;gap:10px;align-items:center">
-            <span class="badge ${getBadgeClass(state.client.points)}">${getLevel(state.client.points).name}</span>
+            <span class="${getBadgeClass(state.client.points)}">${lv.name}</span>
             <span style="font-size:13px;color:#666">${state.client.nom}</span>
           </div>
           <span class="pts-val">${state.client.points.toLocaleString()} pts</span>
-        </div>` : ''}
-      ${state.view === 'cashier' ? renderCashier() : renderClient()}
+        </div>`:''}
+      ${state.view==='cashier'?renderCashier():renderClient()}
+    </div>`;
+  // Génère QR si vue client
+  if(state.view==='client'&&state.clientTab==='card'&&state.client){
+    generateQR(state.client.id);
+  }
+}
+
+// ── SCANNER UI ────────────────────────────────────────────────────────────────
+function renderScanner(){
+  return `
+    <canvas id="scan-canvas" style="display:none"></canvas>
+    <div class="scan-overlay">
+      <div style="font-size:13px;color:#888;letter-spacing:2px;text-transform:uppercase">Scanner la carte client</div>
+      <div class="scan-box">
+        <video id="scan-video" playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
+        <div class="scan-corners"></div>
+        <div class="scan-line"></div>
+      </div>
+      <div class="scan-hint">Pointez la caméra vers le QR code du client</div>
+      <button class="scan-close" onclick="stopScan()">✕ Annuler</button>
     </div>`;
 }
 
-function getBadgeClass(pts) {
-  const n = getLevel(pts).name;
-  return n==='Argent'?'badge badge-argent':n==='Or'?'badge badge-or':n==='Platine'?'badge badge-platine':'badge';
-}
-
-// ── LOGIN ────────────────────────────────────────────────────────────────────
-function renderLogin() {
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+function renderLogin(){
   return `
     <div class="login-screen">
       <div style="text-align:center">
         <div class="header-sub">programme</div>
-        <div class="header-title" style="font-size:28px">Maison Loyale</div>
+        <div class="header-title" style="font-size:28px">La craquante de lesigny</div>
       </div>
       <div class="login-box">
-        <div class="login-title">Accès Caisse</div>
-        <div class="login-sub">Entrez le mot de passe caissier</div>
+        <div style="font-size:22px;font-weight:700;margin-bottom:6px;text-align:center">Accès Caisse</div>
+        <div style="font-size:13px;color:#555;text-align:center;margin-bottom:24px">Entrez le mot de passe caissier</div>
         <input class="input" type="password" id="pwd-input" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')checkPwd()">
         <button class="btn-primary" onclick="checkPwd()">Se connecter</button>
         <div style="margin-top:20px;border-top:1px solid #1e1e1e;padding-top:16px">
-          <div class="login-sub" style="margin-bottom:12px">Ou accéder à votre carte client</div>
+          <div style="font-size:13px;color:#555;text-align:center;margin-bottom:12px">Ou accéder à votre carte client</div>
           <input class="input" type="tel" id="tel-input" placeholder="Votre numéro de téléphone" onkeydown="if(event.key==='Enter')loginClient()">
-          <button class="btn-primary" style="background:#1a1a1a;color:#c8956c;border:1px solid rgba(200,149,108,0.3)" onclick="loginClient()">Voir ma carte</button>
+          <button class="btn-primary" style="background:#1a1a1a;color:#c8956c;border:1px solid rgba(200,149,108,.3)" onclick="loginClient()">Voir ma carte</button>
         </div>
       </div>
     </div>`;
 }
 
-function checkPwd() {
-  const pwd = document.getElementById('pwd-input').value;
-  if (pwd === CAISSIER_PWD) { state.view = 'cashier'; state.cashierOk = true; render(); }
-  else showToast('Mot de passe incorrect', '#e87070');
+function checkPwd(){
+  const pwd=document.getElementById('pwd-input').value;
+  if(pwd===CAISSIER_PWD){state.view='cashier';state.cashierOk=true;render();}
+  else showToast('Mot de passe incorrect','#e87070');
 }
 
-async function loginClient() {
-  const tel = document.getElementById('tel-input').value.trim();
-  if (!tel) return;
-  const { data } = await sb.from('clients').select('*').eq('telephone', tel).single();
-  if (data) {
-    state.client = data;
-    state.view = 'client';
-    await loadTransactions(data.id);
-    render();
-  } else {
-    showToast('Numéro non trouvé — demandez au caissier de vous inscrire', '#e87070');
-  }
+async function loginClient(){
+  const tel=document.getElementById('tel-input').value.trim();
+  if(!tel) return;
+  const {data}=await sb.from('clients').select('*').eq('telephone',tel).single();
+  if(data){state.client=data;state.view='client';await loadTransactions(data.id);render();}
+  else showToast('Numéro non trouvé','#e87070');
 }
 
-// ── CAISSE ───────────────────────────────────────────────────────────────────
-function renderCashier() {
-  if (state.step === 'done') return `
+// ── CAISSE ────────────────────────────────────────────────────────────────────
+function renderCashier(){
+  if(state.step==='done') return `
     <div class="done-screen">
       <div style="font-size:56px">✅</div>
       <div style="font-size:20px;font-weight:700;color:#8fc98a">Paiement validé !</div>
       <div style="font-size:13px;color:#555">Points mis à jour</div>
     </div>`;
 
-  const items = CATALOG.filter(p => (state.cart[p.id]||0) > 0);
-  const total = items.reduce((s,p) => s + p.price * state.cart[p.id], 0);
-  const earned = items.reduce((s,p) => s + p.pts * state.cart[p.id], 0);
-  const maxUse = state.client ? Math.min(state.client.points, Math.floor(total / PT_VAL)) : 0;
-  const discount = state.usePoints * PT_VAL;
-  const finalTotal = Math.max(0, total - discount);
-  const cartCount = Object.values(state.cart).reduce((s,v) => s+v, 0);
+  const items=CATALOG.filter(p=>(state.cart[p.id]||0)>0);
+  const total=items.reduce((s,p)=>s+p.price*state.cart[p.id],0);
+  const earned=items.reduce((s,p)=>s+p.pts*state.cart[p.id],0);
+  const maxUse=state.client?Math.min(state.client.points,Math.floor(total/PT_VAL)):0;
+  const discount=state.usePoints*PT_VAL;
+  const finalTotal=Math.max(0,total-discount);
+  const cartCount=Object.values(state.cart).reduce((s,v)=>s+v,0);
 
-  if (state.step === 'summary') return renderSummary(items, total, earned, maxUse, discount, finalTotal);
+  if(state.step==='summary') return renderSummary(items,total,earned,maxUse,discount,finalTotal);
 
   return `
     ${renderClientSearch()}
-    ${CATS.map(cat => `
+    ${CATS.map(cat=>`
       <div class="section-title">${cat}</div>
       <div class="product-grid">
-        ${CATALOG.filter(p=>p.cat===cat).map(p => {
-          const qty = state.cart[p.id]||0;
-          return `<button class="product-btn ${qty>0?'selected':''}" onclick="addToCart(${p.id})" style="${qty>0?`border-color:rgba(200,149,108,0.4)`:''}">
+        ${CATALOG.filter(p=>p.cat===cat).map(p=>{
+          const qty=state.cart[p.id]||0;
+          return `<button class="product-btn ${qty>0?'selected':''}" onclick="addToCart(${p.id})" style="${qty>0?'border-color:rgba(200,149,108,.4)':''}">
             <div class="product-icon">${p.icon}</div>
             <div class="product-name">${p.name}</div>
             <div class="product-info">
@@ -255,18 +351,18 @@ function renderCashier() {
           </button>`;
         }).join('')}
       </div>`).join('')}
-    ${cartCount > 0 ? `
+    ${cartCount>0?`
       <div class="cart-bar">
         <button class="cart-btn" onclick="goToSummary()">
-          <span style="background:rgba(0,0,0,0.15);border-radius:20px;padding:3px 10px;font-size:13px">${cartCount} article${cartCount>1?'s':''}</span>
+          <span style="background:rgba(0,0,0,.15);border-radius:20px;padding:3px 10px;font-size:13px">${cartCount} article${cartCount>1?'s':''}</span>
           <span>Récapitulatif →</span>
           <span>${total.toFixed(2)} €</span>
         </button>
-      </div>` : `<div class="empty">Appuyez sur un article pour l'ajouter ↑</div>`}`;
+      </div>`:`<div class="empty">Appuyez sur un article pour l'ajouter ↑</div>`}`;
 }
 
-function renderClientSearch() {
-  if (state.client) return `
+function renderClientSearch(){
+  if(state.client) return `
     <div class="client-found">
       <div>
         <div style="font-size:13px;color:#7ec87e;font-weight:600">✓ Client identifié</div>
@@ -275,12 +371,16 @@ function renderClientSearch() {
       <button onclick="clearClient()" style="background:none;border:none;color:#444;font-size:12px;cursor:pointer">Changer</button>
     </div>`;
   return `
-    <div class="client-search">
+    <div style="background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:16px 18px;margin-bottom:16px">
       <div class="section-title" style="margin-bottom:10px">Identifier le client</div>
+      <button onclick="startScan()" style="width:100%;background:rgba(200,149,108,.1);border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:12px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px">
+        <span style="font-size:20px">📷</span> Scanner le QR code du client
+      </button>
+      <div style="text-align:center;font-size:11px;color:#333;margin-bottom:10px">— ou rechercher manuellement —</div>
       <input class="input" type="tel" id="search-tel" placeholder="Numéro de téléphone" style="margin-bottom:8px" onkeydown="if(event.key==='Enter')searchClient()">
       <div style="display:flex;gap:8px">
         <button onclick="searchClient()" style="flex:1;background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:10px;padding:10px;font-size:13px;cursor:pointer">Rechercher</button>
-        <button onclick="showNewClient()" style="flex:1;background:rgba(200,149,108,0.1);border:1px solid rgba(200,149,108,0.3);color:#c8956c;border-radius:10px;padding:10px;font-size:13px;cursor:pointer">+ Nouveau client</button>
+        <button onclick="showNewClient()" style="flex:1;background:rgba(200,149,108,.1);border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:10px;padding:10px;font-size:13px;cursor:pointer">+ Nouveau</button>
       </div>
       <div id="new-client-form" style="display:none;margin-top:12px">
         <input class="input" type="text" id="new-nom" placeholder="Prénom et nom" style="margin-bottom:8px">
@@ -290,19 +390,19 @@ function renderClientSearch() {
     </div>`;
 }
 
-function renderSummary(items, total, earned, maxUse, discount, finalTotal) {
-  const rewardsAvail = state.client ? REWARDS.filter(r => r.pts <= state.client.points) : [];
+function renderSummary(items,total,earned,maxUse,discount,finalTotal){
+  const rewardsAvail=state.client?REWARDS.filter(r=>r.pts<=state.client.points):[];
   return `
     <button class="back-btn" onclick="state.step='catalog';render()">← Modifier la commande</button>
     <div class="section-title">Récapitulatif commande</div>
     <div class="summary-box" style="margin-bottom:16px">
-      ${items.map(p => `
+      ${items.map(p=>`
         <div class="summary-row">
           <div style="display:flex;align-items:center;gap:10px">
             <span style="font-size:18px">${p.icon}</span>
             <div>
               <div style="font-size:14px;color:#ddd">${state.cart[p.id]}× ${p.name}</div>
-              <div style="font-size:11px;color:#7ec87e">+${p.pts * state.cart[p.id]} pts</div>
+              <div style="font-size:11px;color:#7ec87e">+${p.pts*state.cart[p.id]} pts</div>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px">
@@ -315,9 +415,9 @@ function renderSummary(items, total, earned, maxUse, discount, finalTotal) {
       <span style="font-size:13px;color:#7ec87e">✦ Points gagnés ce paiement</span>
       <span style="font-size:14px;font-weight:700;color:#7ec87e">+${earned} pts</span>
     </div>
-    ${state.client ? `
+    ${state.client?`
     <div class="use-pts-box">
-      <div class="use-pts-header">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:600;color:#ccc">
         <span>💳 Utiliser les points du client</span>
         <div style="display:flex;gap:8px;align-items:center">
           <span class="badge">${state.usePoints} pts</span>
@@ -325,10 +425,10 @@ function renderSummary(items, total, earned, maxUse, discount, finalTotal) {
         </div>
       </div>
       <div style="font-size:11px;color:#333;margin-bottom:10px">${state.client.points} pts dispo · max −${(maxUse*PT_VAL).toFixed(2)} €</div>
-      ${rewardsAvail.length > 0 ? `
+      ${rewardsAvail.length>0?`
         <div style="font-size:10px;letter-spacing:2px;color:#333;text-transform:uppercase;margin-bottom:8px">Offrir une récompense</div>
-        ${rewardsAvail.map(r => `
-          <button onclick="redeemReward(${r.id})" style="display:flex;justify-content:space-between;align-items:center;background:#0d0d0d;border:1px solid ${r.color}44;border-radius:12px;padding:11px 16px;cursor:pointer;width:100%;margin-bottom:8px;transition:all .2s">
+        ${rewardsAvail.map(r=>`
+          <button onclick="redeemReward(${r.id})" style="display:flex;justify-content:space-between;align-items:center;background:#0d0d0d;border:1px solid ${r.color}44;border-radius:12px;padding:11px 16px;cursor:pointer;width:100%;margin-bottom:8px">
             <div style="display:flex;gap:10px;align-items:center">
               <span style="font-size:18px">${r.icon}</span>
               <span style="font-size:14px;color:#ccc">${r.name}</span>
@@ -338,59 +438,59 @@ function renderSummary(items, total, earned, maxUse, discount, finalTotal) {
               <span style="font-size:11px;color:${r.color}">Offrir →</span>
             </div>
           </button>`).join('')}
-        <div style="font-size:10px;letter-spacing:2px;color:#333;text-transform:uppercase;margin:12px 0 8px">Ou déduire sur la note</div>` : ''}
+        <div style="font-size:10px;letter-spacing:2px;color:#333;text-transform:uppercase;margin:12px 0 8px">Ou déduire sur la note</div>`:''}
       <input type="range" min="0" max="${maxUse}" step="10" value="${state.usePoints}" oninput="state.usePoints=+this.value;render()">
       <div class="quick-btns">
-        ${[['Non',0],['25%',Math.floor(maxUse*.25)],['50%',Math.floor(maxUse*.5)],['Tout',maxUse]].map(([l,v]) =>
+        ${[['Non',0],['25%',Math.floor(maxUse*.25)],['50%',Math.floor(maxUse*.5)],['Tout',maxUse]].map(([l,v])=>
           `<button class="quick-btn ${state.usePoints===v?'active':''}" onclick="state.usePoints=${v};render()">${l}</button>`
         ).join('')}
       </div>
-    </div>` : `<div style="font-size:13px;color:#555;text-align:center;margin-bottom:14px">Aucun client identifié — les points ne seront pas attribués</div>`}
+    </div>`:`<div style="font-size:13px;color:#555;text-align:center;margin-bottom:14px">Aucun client identifié — les points ne seront pas attribués</div>`}
     <div class="summary-box">
       ${discount>0?`
         <div class="summary-row"><span style="color:#444">Sous-total</span><span style="color:#444;text-decoration:line-through">${total.toFixed(2)} €</span></div>
         <div class="summary-row"><span style="color:#7ec87e">Réduction points</span><span style="color:#7ec87e">−${discount.toFixed(2)} €</span></div>`:''}
       <div class="summary-row">
-        <span class="summary-total">Total à encaisser</span>
-        <span class="summary-total" style="color:#c8956c">${finalTotal.toFixed(2)} €</span>
+        <span style="font-size:18px;font-weight:700">Total à encaisser</span>
+        <span style="font-size:20px;font-weight:700;color:#c8956c">${finalTotal.toFixed(2)} €</span>
       </div>
     </div>
     <button class="pay-btn" onclick="handlePay(${earned},${finalTotal})">💳 Encaisser · ${finalTotal.toFixed(2)} €</button>`;
 }
 
-// ── CLIENT ───────────────────────────────────────────────────────────────────
-function renderClient() {
-  if (!state.client) return `
+// ── CLIENT ────────────────────────────────────────────────────────────────────
+function renderClient(){
+  if(!state.client) return `
     <div class="done-screen">
       <div style="font-size:40px">👤</div>
-      <div style="font-size:15px;color:#555;text-align:center">Connectez-vous avec votre numéro de téléphone depuis l'écran d'accueil</div>
+      <div style="font-size:15px;color:#555;text-align:center">Connectez-vous avec votre numéro de téléphone</div>
       <button onclick="state.view='login';render()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#c8956c;border-radius:12px;padding:12px 24px;font-size:14px;cursor:pointer">← Retour</button>
     </div>`;
 
-  const pts = state.client.points;
-  const level = getLevel(pts);
-  const next = LEVELS[LEVELS.indexOf(level)+1];
-  const prog = next ? Math.min(100,((pts-level.min)/(next.min-level.min))*100) : 100;
+  const pts=state.client.points;
+  const level=getLevel(pts);
+  const next=LEVELS[LEVELS.indexOf(level)+1];
+  const prog=next?Math.min(100,((pts-level.min)/(next.min-level.min))*100):100;
 
   return `
     <div style="display:flex;gap:5px;background:#0d0d0d;border-radius:12px;padding:4px;margin-bottom:22px">
-      ${[{id:'card',l:'Ma Carte'},{id:'history',l:'Historique'}].map(t =>
+      ${[{id:'card',l:'Ma Carte'},{id:'history',l:'Historique'}].map(t=>
         `<button class="tab ${state.clientTab===t.id?'active':''}" style="${state.clientTab===t.id?`color:${level.color};border-color:${level.color}44`:''}" onclick="state.clientTab='${t.id}';render()">${t.l}</button>`
       ).join('')}
     </div>
-    ${state.clientTab==='card' ? `
-      <div class="card-visual" style="box-shadow:0 0 0 1px ${level.color}33,0 24px 60px rgba(0,0,0,0.6)">
+    ${state.clientTab==='card'?`
+      <div class="card-visual" style="box-shadow:0 0 0 1px ${level.color}33,0 24px 60px rgba(0,0,0,.6)">
         <div class="card-glow" style="background:radial-gradient(circle,${level.color}18 0%,transparent 70%)"></div>
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px">
           <div>
             <div style="font-size:10px;letter-spacing:3px;color:${level.color};text-transform:uppercase;margin-bottom:3px">Carte Fidélité</div>
-            <div style="font-size:20px;font-weight:700;font-family:Georgia,serif;letter-spacing:1px;color:#e8e2d8">Maison Loyale</div>
+            <div style="font-size:20px;font-weight:700;font-family:Georgia,serif;letter-spacing:1px;color:#e8e2d8">La craquante de lesigny</div>
           </div>
           <span class="${getBadgeClass(pts)}">${level.name}</span>
         </div>
-        <div class="card-pts" style="color:${level.color}">${pts.toLocaleString()}</div>
-        <div class="card-pts-label">points</div>
-        <div class="card-value">= ${(pts*PT_VAL).toFixed(2)} € de réduction disponible</div>
+        <div style="font-size:52px;font-weight:800;color:${level.color};letter-spacing:-3px;line-height:1;text-align:center;margin-bottom:4px">${pts.toLocaleString()}</div>
+        <div style="font-size:11px;color:#555;letter-spacing:2px;text-transform:uppercase;text-align:center">points</div>
+        <div style="font-size:13px;color:#7ec87e;text-align:center;margin-top:8px;font-weight:500">= ${(pts*PT_VAL).toFixed(2)} € de réduction disponible</div>
         <div class="progress-bar"><div class="progress-fill" style="width:${prog}%;background:linear-gradient(90deg,${level.color}66,${level.color})"></div></div>
         ${next?`<div style="font-size:11px;color:#444;text-align:right;margin-bottom:14px">${next.min-pts} pts avant ${next.name}</div>`:'<div style="margin-bottom:14px"></div>'}
         <div style="display:flex;justify-content:space-between;align-items:center">
@@ -401,9 +501,19 @@ function renderClient() {
           <div style="font-family:monospace;font-size:11px;color:#2a2a2a;letter-spacing:2px">${state.client.telephone}</div>
         </div>
       </div>
-      <div class="levels-box">
+
+      <!-- QR CODE -->
+      <div class="qr-section">
+        <div style="font-size:11px;letter-spacing:2px;color:#444;text-transform:uppercase">Mon QR code</div>
+        <canvas id="qr-canvas-${state.client.id}" class="qr-canvas" width="180" height="180"></canvas>
+        <div style="font-size:12px;color:#555;text-align:center">Montrez ce code au caissier pour être identifié instantanément</div>
+        <button class="print-btn" onclick="printQR()">🖨️ Imprimer ma carte</button>
+      </div>
+
+      <!-- Récompenses -->
+      <div class="levels-box" style="margin-top:16px">
         <div class="section-title">Récompenses disponibles</div>
-        ${REWARDS.map(r => `
+        ${REWARDS.map(r=>`
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;opacity:${pts>=r.pts?1:.3}">
             <div style="display:flex;gap:10px;align-items:center">
               <span style="font-size:18px">${r.icon}</span>
@@ -411,106 +521,125 @@ function renderClient() {
             </div>
             <div style="display:flex;gap:8px;align-items:center">
               <span style="background:${r.color}22;color:${r.color};border:1px solid ${r.color}44;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">${r.pts} pts</span>
-              ${pts>=r.pts?`<span style="font-size:11px;color:#7ec87e">✓ Dispo</span>`:''}
+              ${pts>=r.pts?`<span style="font-size:11px;color:#7ec87e">✓</span>`:''}
             </div>
           </div>`).join('')}
-        <div class="info-msg">💬 Demandez à votre caissier d'utiliser vos points lors du paiement.</div>
-      </div>` : `
+        <div style="background:#0d0d0d;border-radius:10px;padding:10px 14px;font-size:12px;color:#444;line-height:1.6;margin-top:14px">
+          💬 Montrez votre QR code au caissier pour utiliser vos points.
+        </div>
+      </div>`:`
       <div class="tx-list">
         ${state.transactions.length===0?`<div style="text-align:center;color:#2e2e2e;font-size:13px;padding:24px">Aucune transaction</div>`:''}
-        ${state.transactions.map(tx => `
+        ${state.transactions.map(tx=>`
           <div class="tx-row">
             <div>
-              <div class="tx-label">${tx.label}</div>
-              <div class="tx-date">${new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div>
+              <div style="font-size:13px;color:#ddd;margin-bottom:3px">${tx.label}</div>
+              <div style="font-size:11px;color:#444">${new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div>
             </div>
-            <div class="tx-pts" style="color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pts</div>
+            <div style="font-family:monospace;font-weight:700;font-size:14px;color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pts</div>
           </div>`).join('')}
       </div>`}`;
 }
 
-// ── ACTIONS ──────────────────────────────────────────────────────────────────
-function switchView(v) {
-  if (v === 'cashier' && !state.cashierOk) { state.view = 'login'; render(); return; }
-  state.view = v; render();
+// ── IMPRESSION ────────────────────────────────────────────────────────────────
+function printQR(){
+  const canvas=document.getElementById('qr-canvas-'+state.client.id);
+  if(!canvas) return;
+  const win=window.open('','_blank');
+  win.document.write(`
+    <html><head><title>Carte Fidélité — ${state.client.nom}</title>
+    <style>
+      body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif;background:#fff}
+      .card{border:2px solid #c8956c;border-radius:16px;padding:24px;text-align:center;width:280px}
+      .logo{font-size:22px;font-weight:bold;color:#1a1410;margin-bottom:4px;letter-spacing:1px}
+      .sub{font-size:11px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
+      .name{font-size:16px;font-weight:bold;color:#1a1410;margin-top:12px}
+      .hint{font-size:11px;color:#aaa;margin-top:8px}
+    </style></head>
+    <body><div class="card">
+      <div class="logo">La craquante de lesigny</div>
+      <div class="sub">Carte Fidélité</div>
+      <img src="${canvas.toDataURL()}" width="160" height="160">
+      <div class="name">${state.client.nom}</div>
+      <div class="hint">Présentez ce QR code en caisse</div>
+    </div></body></html>`);
+  win.document.close();
+  win.print();
 }
 
-function addToCart(id) { state.cart[id] = (state.cart[id]||0)+1; render(); }
-function removeFromCart(id) { state.cart[id] = Math.max(0,(state.cart[id]||0)-1); state.usePoints=0; render(); }
-function goToSummary() { state.step='summary'; render(); }
-function clearClient() { state.client=null; state.clientTel=''; render(); }
+// ── ACTIONS ───────────────────────────────────────────────────────────────────
+function switchView(v){
+  if(v==='cashier'&&!state.cashierOk){state.view='login';render();return;}
+  state.view=v;render();
+}
+function addToCart(id){state.cart[id]=(state.cart[id]||0)+1;render();}
+function removeFromCart(id){state.cart[id]=Math.max(0,(state.cart[id]||0)-1);state.usePoints=0;render();}
+function goToSummary(){state.step='summary';render();}
+function clearClient(){state.client=null;state.transactions=[];render();}
 
-async function searchClient() {
-  const tel = document.getElementById('search-tel')?.value?.trim();
-  if (!tel) return;
-  const { data } = await sb.from('clients').select('*').eq('telephone', tel).single();
-  if (data) { state.client=data; await loadTransactions(data.id); render(); }
-  else showToast('Client non trouvé — créez son compte ↓', '#e87070');
+async function searchClient(){
+  const tel=document.getElementById('search-tel')?.value?.trim();
+  if(!tel) return;
+  const {data}=await sb.from('clients').select('*').eq('telephone',tel).single();
+  if(data){state.client=data;await loadTransactions(data.id);render();}
+  else showToast('Client non trouvé','#e87070');
 }
 
-function showNewClient() {
-  const f = document.getElementById('new-client-form');
-  if (f) f.style.display = f.style.display==='none' ? 'block' : 'none';
+function showNewClient(){
+  const f=document.getElementById('new-client-form');
+  if(f) f.style.display=f.style.display==='none'?'block':'none';
 }
 
-async function createClient() {
-  const nom = document.getElementById('new-nom')?.value?.trim();
-  const tel = document.getElementById('new-tel')?.value?.trim();
-  if (!nom || !tel) return showToast('Remplissez nom et téléphone', '#e87070');
-  const { data, error } = await sb.from('clients').insert({ nom, telephone: tel, points: 0 }).select().single();
-  if (error) return showToast('Numéro déjà utilisé ou erreur', '#e87070');
-  state.client = data;
-  state.transactions = [];
-  showToast(`✅ ${nom} inscrit !`, '#8fc98a');
+async function createClient(){
+  const nom=document.getElementById('new-nom')?.value?.trim();
+  const tel=document.getElementById('new-tel')?.value?.trim();
+  if(!nom||!tel) return showToast('Remplissez nom et téléphone','#e87070');
+  const {data,error}=await sb.from('clients').insert({nom,telephone:tel,points:0}).select().single();
+  if(error) return showToast('Numéro déjà utilisé ou erreur','#e87070');
+  state.client=data;state.transactions=[];
+  showToast(`✅ ${nom} inscrit !`,'#8fc98a');
   render();
 }
 
-async function handlePay(earned, finalTotal) {
-  const items = CATALOG.filter(p => (state.cart[p.id]||0) > 0);
-  const used = state.usePoints;
-  const net = earned - used;
-
-  if (state.client) {
-    const newPts = state.client.points + net;
-    await sb.from('clients').update({ points: newPts }).eq('id', state.client.id);
-    if (used > 0) {
-      await sb.from('transactions').insert({ client_id: state.client.id, label: `${used} pts utilisés`, points: -used, type: 'redeem' });
-    }
-    for (const it of items) {
-      await sb.from('transactions').insert({ client_id: state.client.id, label: `${state.cart[it.id]}× ${it.name}`, points: it.pts * state.cart[it.id], type: 'earn' });
-    }
-    state.client.points = newPts;
+async function handlePay(earned,finalTotal){
+  const items=CATALOG.filter(p=>(state.cart[p.id]||0)>0);
+  const used=state.usePoints;
+  const discount=used*PT_VAL;
+  if(state.client){
+    const newPts=state.client.points+earned-used;
+    await sb.from('clients').update({points:newPts}).eq('id',state.client.id);
+    if(used>0) await sb.from('transactions').insert({client_id:state.client.id,label:`${used} pts utilisés (−${discount.toFixed(2)} €)`,points:-used,type:'redeem'});
+    for(const it of items) await sb.from('transactions').insert({client_id:state.client.id,label:`${state.cart[it.id]}× ${it.name}`,points:it.pts*state.cart[it.id],type:'earn'});
+    state.client.points=newPts;
   }
-  state.cart = {}; state.usePoints = 0; state.step = 'done';
-  showToast(`✅ Encaissé${state.client?' · +'+earned+' pts':''}`, '#8fc98a');
+  state.cart={};state.usePoints=0;state.step='done';
+  showToast(`✅ Encaissé${state.client?' · +'+earned+' pts':''}`,'#8fc98a');
   render();
-  setTimeout(() => { state.step='catalog'; render(); }, 2500);
+  setTimeout(()=>{state.step='catalog';render();},2500);
 }
 
-async function redeemReward(rewardId) {
-  if (!state.client) return;
-  const r = REWARDS.find(x => x.id === rewardId);
-  if (!r || state.client.points < r.pts) return;
-  const newPts = state.client.points - r.pts;
-  await sb.from('clients').update({ points: newPts }).eq('id', state.client.id);
-  await sb.from('transactions').insert({ client_id: state.client.id, label: `${r.name} offert ${r.icon}`, points: -r.pts, type: 'redeem' });
-  state.client.points = newPts;
-  showToast(`🎉 ${r.name} offert au client !`, r.color);
+async function redeemReward(rewardId){
+  if(!state.client) return;
+  const r=REWARDS.find(x=>x.id===rewardId);
+  if(!r||state.client.points<r.pts) return;
+  const newPts=state.client.points-r.pts;
+  await sb.from('clients').update({points:newPts}).eq('id',state.client.id);
+  await sb.from('transactions').insert({client_id:state.client.id,label:`${r.name} offert ${r.icon}`,points:-r.pts,type:'redeem'});
+  state.client.points=newPts;
+  showToast(`🎉 ${r.name} offert !`,r.color);
   render();
 }
 
-async function loadTransactions(clientId) {
-  const { data } = await sb.from('transactions').select('*').eq('client_id', clientId).order('created_at', { ascending: false }).limit(30);
-  state.transactions = data || [];
+async function loadTransactions(clientId){
+  const {data}=await sb.from('transactions').select('*').eq('client_id',clientId).order('created_at',{ascending:false}).limit(30);
+  state.transactions=data||[];
 }
 
-function showToast(msg, color='#8fc98a') {
-  state.toast = { msg, color };
-  render();
-  setTimeout(() => { state.toast=null; render(); }, 3000);
+function showToast(msg,color='#8fc98a'){
+  state.toast={msg,color};render();
+  setTimeout(()=>{state.toast=null;render();},3000);
 }
 
-// ── INIT ─────────────────────────────────────────────────────────────────────
 render();
 </script>
 </body>

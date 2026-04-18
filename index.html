@@ -26,8 +26,8 @@ body{background:#0a0a0a;color:#f0ece4;font-family:'Helvetica Neue',sans-serif;mi
 .view-btn.active{background:#1a1a1a;color:#e0ddd8;border-color:#333}
 .view-btn.active-client{background:#1a1a1a;border-color:rgba(200,149,108,.4);color:#c8956c}
 .view-btn.active-patron{background:#1a1a1a;border-color:rgba(249,208,86,.4);color:#f9d056}
-.tabs{display:flex;gap:5px;background:#111;border-radius:14px;padding:5px;margin-bottom:24px}
-.tab{flex:1;padding:10px 4px;font-size:11px;font-weight:400;background:transparent;border:1px solid transparent;color:#555;border-radius:10px;cursor:pointer;transition:all .2s}
+.tabs{display:flex;gap:4px;background:#111;border-radius:14px;padding:5px;margin-bottom:24px;flex-wrap:wrap}
+.tab{flex:1;min-width:60px;padding:9px 4px;font-size:11px;font-weight:400;background:transparent;border:1px solid transparent;color:#555;border-radius:10px;cursor:pointer;transition:all .2s;text-align:center}
 .tab.active{background:#1e1e1e;font-weight:700}
 .section-title{font-size:10px;letter-spacing:3px;color:#444;text-transform:uppercase;margin-bottom:10px}
 .product-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
@@ -65,18 +65,16 @@ input[type=range]{width:100%;appearance:none;height:4px;border-radius:4px;backgr
 .levels-box{background:#111;border:1px solid #1a1a1a;border-radius:16px;padding:16px 20px;width:100%}
 .qr-section{background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:20px;margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:12px}
 .qr-div{border-radius:12px;background:#fff;padding:10px;display:flex;align-items:center;justify-content:center}
-/* Scanner */
 .scan-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
 .scan-box{position:relative;width:280px;height:280px;border-radius:20px;overflow:hidden}
 .scan-box video{width:100%;height:100%;object-fit:cover}
-.scan-corners::before,.scan-corners::after{content:'';position:absolute;width:40px;height:40px;border-color:#c8956c;border-style:solid}
 .scan-corners{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+.scan-corners::before,.scan-corners::after{content:'';position:absolute;width:40px;height:40px;border-color:#c8956c;border-style:solid}
 .scan-corners::before{top:10px;left:10px;border-width:3px 0 0 3px;border-radius:6px 0 0 0}
 .scan-corners::after{bottom:10px;right:10px;border-width:0 3px 3px 0;border-radius:0 0 6px 0}
 .scan-line{position:absolute;width:100%;height:2px;background:linear-gradient(90deg,transparent,#c8956c,transparent);animation:scanAnim 2s linear infinite}
 @keyframes scanAnim{0%{top:10%}100%{top:90%}}
 .scan-close{background:#1a1a1a;border:1px solid #333;color:#ccc;border-radius:12px;padding:12px 28px;font-size:14px;cursor:pointer}
-/* Patron */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
 .stat-card{background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:16px;text-align:center}
 .stat-val{font-size:28px;font-weight:800;color:#c8956c;font-family:monospace}
@@ -84,6 +82,11 @@ input[type=range]{width:100%;appearance:none;height:4px;border-radius:4px;backgr
 .caissier-row{background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .del-btn{background:rgba(232,112,112,.1);border:1px solid rgba(232,112,112,.3);color:#e87070;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
 .add-caissier-box{background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:18px;margin-bottom:16px}
+/* Client list */
+.client-row{background:#111;border:1px solid #1c1c1c;border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;cursor:pointer;transition:all .2s}
+.client-row:hover{background:#161616;border-color:rgba(200,149,108,.3)}
+.search-input{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:12px;padding:11px 16px;color:#e0ddd8;font-size:14px;outline:none;width:100%;margin-bottom:14px}
+.search-input::placeholder{color:#333}
 #barcode-input{position:fixed;opacity:0;pointer-events:none;top:-999px}
 </style>
 </head>
@@ -91,13 +94,11 @@ input[type=range]{width:100%;appearance:none;height:4px;border-radius:4px;backgr
 <div id="root"></div>
 <input id="barcode-input" type="text" autocomplete="off">
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://tgrqfrijwjonrehixgre.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Dk_GsamMzY1KRRIELRxngQ_xsH1Xxkr';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ── DONNÉES ───────────────────────────────────────────────────────────────────
-const CATALOG = [
+const CATALOG=[
   {id:1,name:"Expresso",price:2.50,pts:5,icon:"☕",cat:"Boissons"},
   {id:2,name:"Cappuccino",price:3.80,pts:8,icon:"🥛",cat:"Boissons"},
   {id:3,name:"Jus d'orange",price:4.20,pts:9,icon:"🍊",cat:"Boissons"},
@@ -124,18 +125,21 @@ const LEVELS=[
 ];
 const PT_VAL=0.01;
 const CATS=[...new Set(CATALOG.map(p=>p.cat))];
-const PATRON_PWD="patron2024"; // ← Changez ce mot de passe patron !
+const PATRON_PWD="patron2024"; // ← Changez !
 
 function getLevel(p){return LEVELS.find(l=>p>=l.min&&p<=l.max)||LEVELS[0]}
 function getBadgeClass(pts){const n=getLevel(pts).name;return n==='Argent'?'badge badge-argent':n==='Or'?'badge badge-or':n==='Platine'?'badge badge-platine':'badge'}
 
-// ── ÉTAT ──────────────────────────────────────────────────────────────────────
 let state={
-  view:'login',role:null, // role: 'patron' | 'caissier' | 'client'
-  caissierActif:null, // {id, nom, code}
+  view:'login',role:null,
+  caissierActif:null,
   client:null,transactions:[],
   cart:{},usePoints:0,step:'catalog',
-  clientTab:'card',patronTab:'stats',
+  clientTab:'card',
+  patronTab:'stats',
+  selectedClient:null, // client sélectionné dans la liste patron
+  selectedClientTx:[], // transactions du client sélectionné
+  clientSearch:'',     // recherche dans la liste
   scanning:false,toast:null,
   caissiers:[],allTransactions:[],allClients:[],
 };
@@ -178,8 +182,6 @@ async function handleQRScan(qrData){
   if(data){state.client=data;await loadTransactions(data.id);showToast(`✅ ${data.nom} identifié !`,'#8fc98a');render();}
   else showToast('QR code non reconnu','#e87070');
 }
-
-// Douchette
 let barcodeBuffer='',barcodeTimer=null;
 document.addEventListener('keydown',e=>{
   if(state.view!=='cashier'||state.role!=='caissier')return;
@@ -189,7 +191,6 @@ document.addEventListener('keydown',e=>{
   else if(e.key.length===1){barcodeBuffer+=e.key;clearTimeout(barcodeTimer);barcodeTimer=setTimeout(()=>{barcodeBuffer='';},200);}
 });
 
-// QR Code
 function generateQR(clientId){
   setTimeout(()=>{
     const div=document.getElementById('qr-div-'+clientId);
@@ -208,7 +209,7 @@ function render(){
     <div class="app">
       <div class="header"><div class="header-sub">programme</div><div class="header-title">La craquante de lesigny</div></div>
       <div class="view-switch">
-        ${state.role==='patron'?`<button class="view-btn active-patron" style="background:#1a1a1a;border-color:rgba(249,208,86,.4);color:#f9d056">
+        ${state.role==='patron'?`<button class="view-btn active-patron">
           <div>👑 Patron</div><div>Tableau de bord</div>
         </button>`:`
         <button class="view-btn ${state.view==='cashier'?'active':''}" onclick="switchView('cashier')">
@@ -240,8 +241,7 @@ function renderScanner(){return`
     <div style="font-size:13px;color:#888;letter-spacing:2px;text-transform:uppercase">Scanner la carte client</div>
     <div class="scan-box">
       <video id="scan-video" playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
-      <div class="scan-corners"></div>
-      <div class="scan-line"></div>
+      <div class="scan-corners"></div><div class="scan-line"></div>
     </div>
     <div style="font-size:13px;color:#666;text-align:center;max-width:260px">Pointez la caméra vers le QR code du client</div>
     <button class="scan-close" onclick="stopScan()">✕ Annuler</button>
@@ -255,23 +255,17 @@ function renderLogin(){return`
       <div class="header-title" style="font-size:28px">La craquante de lesigny</div>
     </div>
     <div class="login-box">
-      <div style="font-size:22px;font-weight:700;margin-bottom:6px;text-align:center">Connexion</div>
-
-      <!-- PATRON -->
-      <div style="background:#0d0d0d;border:1px solid rgba(249,208,86,.2);border-radius:14px;padding:16px;margin-bottom:16px">
+      <div style="font-size:22px;font-weight:700;margin-bottom:20px;text-align:center">Connexion</div>
+      <div style="background:#0d0d0d;border:1px solid rgba(249,208,86,.2);border-radius:14px;padding:16px;margin-bottom:14px">
         <div style="font-size:12px;color:#f9d056;font-weight:700;margin-bottom:10px">👑 Accès Patron</div>
         <input class="input" type="password" id="patron-pwd" placeholder="Mot de passe patron" onkeydown="if(event.key==='Enter')loginPatron()">
         <button onclick="loginPatron()" style="width:100%;background:rgba(249,208,86,.15);border:1px solid rgba(249,208,86,.3);color:#f9d056;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">Se connecter</button>
       </div>
-
-      <!-- CAISSIER -->
-      <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:14px;padding:16px;margin-bottom:16px">
+      <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:14px;padding:16px;margin-bottom:14px">
         <div style="font-size:12px;color:#c8956c;font-weight:700;margin-bottom:10px">🏪 Accès Caissier</div>
         <input class="input" type="text" id="caissier-code" placeholder="Votre code caissier" onkeydown="if(event.key==='Enter')loginCaissier()">
         <button onclick="loginCaissier()" class="btn-primary">Se connecter</button>
       </div>
-
-      <!-- CLIENT -->
       <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:14px;padding:16px">
         <div style="font-size:12px;color:#888;font-weight:700;margin-bottom:10px">👤 Accès Client</div>
         <input class="input" type="tel" id="tel-input" placeholder="Votre numéro de téléphone" onkeydown="if(event.key==='Enter')loginClient()">
@@ -283,12 +277,9 @@ function renderLogin(){return`
 
 async function loginPatron(){
   const pwd=document.getElementById('patron-pwd').value;
-  if(pwd===PATRON_PWD){
-    state.role='patron';state.view='patron';
-    await loadPatronData();render();
-  } else showToast('Mot de passe incorrect','#e87070');
+  if(pwd===PATRON_PWD){state.role='patron';state.view='patron';await loadPatronData();render();}
+  else showToast('Mot de passe incorrect','#e87070');
 }
-
 async function loginCaissier(){
   const code=document.getElementById('caissier-code').value.trim();
   if(!code)return;
@@ -296,7 +287,6 @@ async function loginCaissier(){
   if(data){state.role='caissier';state.caissierActif=data;state.view='cashier';render();}
   else showToast('Code caissier invalide ou désactivé','#e87070');
 }
-
 async function loginClient(){
   const tel=document.getElementById('tel-input').value.trim();
   const pin=document.getElementById('pin-input').value.trim();
@@ -305,13 +295,11 @@ async function loginClient(){
   if(data){state.client=data;state.role='client';state.view='client';await loadTransactions(data.id);render();}
   else showToast('Numéro ou PIN incorrect','#e87070');
 }
-
 function logout(){
   state.view='login';state.role=null;state.caissierActif=null;
   state.client=null;state.transactions=[];state.cart={};
-  state.usePoints=0;state.step='catalog';render();
+  state.usePoints=0;state.step='catalog';state.selectedClient=null;render();
 }
-
 function switchView(v){
   if(v==='cashier'&&state.role!=='caissier'){showToast('Accès réservé aux caissiers','#e87070');return;}
   state.view=v;render();
@@ -322,18 +310,30 @@ async function loadPatronData(){
   const [{data:c},{data:t},{data:cl}]=await Promise.all([
     sb.from('caissiers').select('*').order('created_at',{ascending:false}),
     sb.from('transactions').select('*').order('created_at',{ascending:false}).limit(100),
-    sb.from('clients').select('*'),
+    sb.from('clients').select('*').order('created_at',{ascending:false}),
   ]);
   state.caissiers=c||[];state.allTransactions=t||[];state.allClients=cl||[];
 }
 
+async function selectClient(client){
+  state.selectedClient=client;
+  const {data}=await sb.from('transactions').select('*').eq('client_id',client.id).order('created_at',{ascending:false}).limit(30);
+  state.selectedClientTx=data||[];
+  render();
+}
+
 function renderPatron(){
-  const PTABS=[{id:'stats',l:'📊 Stats'},{id:'caissiers',l:'👥 Caissiers'},{id:'activite',l:'📋 Activité'}];
+  // Si un client est sélectionné → afficher son détail
+  if(state.selectedClient) return renderPatronClientDetail();
+
+  const PTABS=[
+    {id:'stats',l:'📊 Stats'},
+    {id:'clients',l:'👥 Clients'},
+    {id:'caissiers',l:'🏪 Caissiers'},
+    {id:'activite',l:'📋 Activité'},
+  ];
+
   const txEarn=state.allTransactions.filter(t=>t.type==='earn');
-  const totalCA=txEarn.reduce((s,t)=>{
-    const prod=CATALOG.find(p=>t.label.includes(p.name));
-    return s+(prod?prod.price:0);
-  },0);
   const totalPts=txEarn.reduce((s,t)=>s+(t.points||0),0);
 
   // Stats par caissier
@@ -346,34 +346,28 @@ function renderPatron(){
     }
   });
 
+  // Filtrage clients
+  const filtered=state.allClients.filter(c=>
+    c.nom.toLowerCase().includes(state.clientSearch.toLowerCase())||
+    c.telephone.includes(state.clientSearch)
+  );
+
   return`
-    <div style="display:flex;gap:5px;background:#0d0d0d;border-radius:12px;padding:4px;margin-bottom:22px">
+    <div class="tabs">
       ${PTABS.map(t=>`<button class="tab ${state.patronTab===t.id?'active':''}" style="${state.patronTab===t.id?'color:#f9d056;border-color:rgba(249,208,86,.3)':''}" onclick="state.patronTab='${t.id}';render()">${t.l}</button>`).join('')}
     </div>
 
     ${state.patronTab==='stats'?`
       <div class="stat-grid">
-        <div class="stat-card">
-          <div class="stat-val">${state.allClients.length}</div>
-          <div class="stat-label">Clients</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-val">${state.caissiers.filter(c=>c.actif).length}</div>
-          <div class="stat-label">Caissiers actifs</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-val">${totalPts.toLocaleString()}</div>
-          <div class="stat-label">Points distribués</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-val">${txEarn.length}</div>
-          <div class="stat-label">Transactions</div>
-        </div>
+        <div class="stat-card"><div class="stat-val">${state.allClients.length}</div><div class="stat-label">Clients</div></div>
+        <div class="stat-card"><div class="stat-val">${state.caissiers.filter(c=>c.actif).length}</div><div class="stat-label">Caissiers actifs</div></div>
+        <div class="stat-card"><div class="stat-val">${totalPts.toLocaleString()}</div><div class="stat-label">Points distribués</div></div>
+        <div class="stat-card"><div class="stat-val">${txEarn.length}</div><div class="stat-label">Transactions</div></div>
       </div>
       <div class="section-title">Performance par caissier</div>
       ${Object.keys(statsCaissier).length===0?`<div class="empty">Aucune activité enregistrée</div>`:''}
       ${Object.entries(statsCaissier).map(([nom,s])=>`
-        <div class="caissier-row" style="margin-bottom:8px">
+        <div class="caissier-row">
           <div>
             <div style="font-size:14px;color:#ddd;font-weight:600">${nom}</div>
             <div style="font-size:12px;color:#555;margin-top:2px">${s.tx} transaction${s.tx>1?'s':''}</div>
@@ -382,6 +376,24 @@ function renderPatron(){
             <div style="font-size:14px;color:#c8956c;font-weight:700">+${s.pts} pts</div>
           </div>
         </div>`).join('')}`:''}
+
+    ${state.patronTab==='clients'?`
+      <input class="search-input" type="text" placeholder="🔍 Rechercher par nom ou téléphone..." oninput="state.clientSearch=this.value;render()" value="${state.clientSearch}">
+      <div style="font-size:12px;color:#555;margin-bottom:12px">${filtered.length} client${filtered.length>1?'s':''}</div>
+      ${filtered.length===0?`<div class="empty">Aucun client trouvé</div>`:''}
+      ${filtered.map(c=>{
+        const level=getLevel(c.points);
+        return`<div class="client-row" onclick="selectClient(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+          <div>
+            <div style="font-size:14px;color:#ddd;font-weight:600">${c.nom}</div>
+            <div style="font-size:12px;color:#555;margin-top:2px">${c.telephone} · inscrit le ${new Date(c.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div>
+          </div>
+          <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            <span class="${getBadgeClass(c.points)}">${level.name}</span>
+            <span style="font-size:13px;font-weight:700;color:${level.color};font-family:monospace">${c.points.toLocaleString()} pts</span>
+          </div>
+        </div>`;
+      }).join('')}`:''}
 
     ${state.patronTab==='caissiers'?`
       <div class="add-caissier-box">
@@ -404,7 +416,7 @@ function renderPatron(){
     ${state.patronTab==='activite'?`
       <div class="section-title">Dernières transactions</div>
       <div class="tx-list">
-        ${state.allTransactions.slice(0,30).map(tx=>`
+        ${state.allTransactions.slice(0,50).map(tx=>`
           <div class="tx-row">
             <div>
               <div style="font-size:13px;color:#ddd;margin-bottom:2px">${tx.label}</div>
@@ -419,6 +431,72 @@ function renderPatron(){
       </div>`:''}`;
 }
 
+function renderPatronClientDetail(){
+  const c=state.selectedClient;
+  const level=getLevel(c.points);
+  const next=LEVELS[LEVELS.indexOf(level)+1];
+  const prog=next?Math.min(100,((c.points-level.min)/(next.min-level.min))*100):100;
+  const totalDepense=state.selectedClientTx.filter(t=>t.type==='earn').reduce((s,t)=>{
+    const prod=CATALOG.find(p=>t.label.includes(p.name));
+    return s+(prod?prod.price:0);
+  },0);
+
+  return`
+    <button class="back-btn" onclick="state.selectedClient=null;render()">← Retour à la liste</button>
+
+    <!-- Carte résumé -->
+    <div style="background:#111;border:1px solid ${level.color}33;border-radius:16px;padding:18px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <div style="font-size:18px;font-weight:700;color:#ddd">${c.nom}</div>
+          <div style="font-size:13px;color:#555;margin-top:3px">${c.telephone}</div>
+          <div style="font-size:11px;color:#444;margin-top:2px">Client depuis le ${new Date(c.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</div>
+        </div>
+        <span class="${getBadgeClass(c.points)}">${level.name}</span>
+      </div>
+
+      <!-- Stats client -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+        <div style="background:#0d0d0d;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:${level.color}">${c.points.toLocaleString()}</div>
+          <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-top:2px">Points</div>
+        </div>
+        <div style="background:#0d0d0d;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:#7ec87e">${state.selectedClientTx.filter(t=>t.type==='earn').length}</div>
+          <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-top:2px">Visites</div>
+        </div>
+        <div style="background:#0d0d0d;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:#7eb8d4">${totalDepense.toFixed(0)}€</div>
+          <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-top:2px">Dépensé</div>
+        </div>
+      </div>
+
+      <!-- Progression niveau -->
+      <div style="font-size:11px;color:#555;margin-bottom:6px;display:flex;justify-content:space-between">
+        <span>${level.name}</span>
+        ${next?`<span>${next.min-c.points} pts avant ${next.name}</span>`:'<span>Niveau maximum ✨</span>'}
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${prog}%;background:linear-gradient(90deg,${level.color}66,${level.color})"></div></div>
+    </div>
+
+    <!-- Historique -->
+    <div class="section-title">Historique (30 dernières transactions)</div>
+    <div class="tx-list">
+      ${state.selectedClientTx.length===0?`<div class="empty">Aucune transaction</div>`:''}
+      ${state.selectedClientTx.map(tx=>`
+        <div class="tx-row">
+          <div>
+            <div style="font-size:13px;color:#ddd;margin-bottom:2px">${tx.label}</div>
+            <div style="font-size:11px;color:#444;display:flex;gap:8px">
+              <span>${new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
+              ${tx.caissier_nom?`<span style="color:#666">· ${tx.caissier_nom}</span>`:''}
+            </div>
+          </div>
+          <div style="font-family:monospace;font-weight:700;font-size:14px;color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pts</div>
+        </div>`).join('')}
+    </div>`;
+}
+
 async function createCaissier(){
   const nom=document.getElementById('new-caissier-nom')?.value?.trim();
   const code=document.getElementById('new-caissier-code')?.value?.trim().toUpperCase();
@@ -428,7 +506,6 @@ async function createCaissier(){
   showToast(`✅ ${nom} créé !`,'#8fc98a');
   await loadPatronData();render();
 }
-
 async function deleteCaissier(id){
   await sb.from('caissiers').update({actif:false}).eq('id',id);
   showToast('Caissier désactivé','#8fc98a');
@@ -443,7 +520,6 @@ function renderCashier(){
       <div style="font-size:20px;font-weight:700;color:#8fc98a">Paiement validé !</div>
       <div style="font-size:13px;color:#555">Points mis à jour</div>
     </div>`;
-
   const items=CATALOG.filter(p=>(state.cart[p.id]||0)>0);
   const total=items.reduce((s,p)=>s+p.price*state.cart[p.id],0);
   const earned=items.reduce((s,p)=>s+p.pts*state.cart[p.id],0);
@@ -451,9 +527,7 @@ function renderCashier(){
   const discount=state.usePoints*PT_VAL;
   const finalTotal=Math.max(0,total-discount);
   const cartCount=Object.values(state.cart).reduce((s,v)=>s+v,0);
-
   if(state.step==='summary')return renderSummary(items,total,earned,maxUse,discount,finalTotal);
-
   return`
     ${state.caissierActif?`<div style="background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:#555">🏪 Caissier : <span style="color:#c8956c">${state.caissierActif.nom}</span></div>`:''}
     ${renderClientSearch()}
@@ -576,7 +650,7 @@ function renderSummary(items,total,earned,maxUse,discount,finalTotal){
     <div class="summary-box">
       ${discount>0?`
         <div class="summary-row"><span style="color:#444">Sous-total</span><span style="color:#444;text-decoration:line-through">${total.toFixed(2)} €</span></div>
-        <div class="summary-row"><span style="color:#7ec87e">Réduction points</span><span style="color:#7ec87e">−${discount.toFixed(2)} €</span></div>`:''}
+        <div class="summary-row"><span style="color:#7ec87e">Réduction</span><span style="color:#7ec87e">−${discount.toFixed(2)} €</span></div>`:''}
       <div class="summary-row">
         <span style="font-size:18px;font-weight:700">Total</span>
         <span style="font-size:20px;font-weight:700;color:#c8956c">${finalTotal.toFixed(2)} €</span>
@@ -677,7 +751,6 @@ async function searchClient(){
   if(data){state.client=data;await loadTransactions(data.id);render();}
   else showToast('Client non trouvé','#e87070');
 }
-
 async function createClient(){
   const nom=document.getElementById('new-nom')?.value?.trim();
   const tel=document.getElementById('new-tel')?.value?.trim();
@@ -689,7 +762,6 @@ async function createClient(){
   state.client=data;state.transactions=[];
   showToast(`✅ ${nom} inscrit !`,'#8fc98a');render();
 }
-
 async function updatePIN(){
   const pin=document.getElementById('new-pin-client')?.value?.trim();
   if(!pin||pin.length!==4)return showToast('PIN doit faire 4 chiffres','#e87070');
@@ -698,7 +770,6 @@ async function updatePIN(){
   showToast('✅ PIN mis à jour !','#8fc98a');
   document.getElementById('change-pin-form').style.display='none';
 }
-
 async function handlePay(earned,finalTotal){
   const items=CATALOG.filter(p=>(state.cart[p.id]||0)>0);
   const used=state.usePoints;
@@ -716,7 +787,6 @@ async function handlePay(earned,finalTotal){
   render();
   setTimeout(()=>{state.step='catalog';state.client=null;state.transactions=[];render();},2500);
 }
-
 async function redeemReward(rewardId){
   if(!state.client)return;
   const r=REWARDS.find(x=>x.id===rewardId);
@@ -728,12 +798,10 @@ async function redeemReward(rewardId){
   state.client.points=newPts;
   showToast(`🎉 ${r.name} offert !`,r.color);render();
 }
-
 async function loadTransactions(clientId){
   const {data}=await sb.from('transactions').select('*').eq('client_id',clientId).order('created_at',{ascending:false}).limit(30);
   state.transactions=data||[];
 }
-
 function printQR(){
   const div=document.getElementById('qr-div-'+state.client.id);
   const canvas=div?.querySelector('canvas');
@@ -741,24 +809,20 @@ function printQR(){
   const win=window.open('','_blank');
   win.document.write(`<html><head><title>Carte — ${state.client.nom}</title>
     <style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif}
-    .card{border:2px solid #c8956c;border-radius:16px;padding:24px;text-align:center;width:280px}
-    .logo{font-size:18px;font-weight:bold;color:#1a1410;margin-bottom:4px}
-    .sub{font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
-    </style></head><body><div class="card">
-    <div class="logo">La craquante de lesigny</div>
-    <div class="sub">Carte Fidélité</div>
+    .card{border:2px solid #c8956c;border-radius:16px;padding:24px;text-align:center;width:280px}</style></head>
+    <body><div class="card">
+    <div style="font-size:18px;font-weight:bold;color:#1a1410;margin-bottom:4px">La craquante de lesigny</div>
+    <div style="font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Carte Fidélité</div>
     <img src="${canvas.toDataURL()}" width="160" height="160">
     <div style="font-size:16px;font-weight:bold;margin-top:12px">${state.client.nom}</div>
     <div style="font-size:11px;color:#aaa;margin-top:6px">Présentez ce QR code en caisse</div>
     </div></body></html>`);
   win.document.close();win.print();
 }
-
 function showToast(msg,color='#8fc98a'){
   state.toast={msg,color};render();
   setTimeout(()=>{state.toast=null;render();},3000);
 }
-
 render();
 </script>
 </body>

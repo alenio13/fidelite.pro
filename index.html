@@ -617,7 +617,7 @@ async function handlePay(earned,finalTotal){
   state.cart={};state.usePoints=0;state.step='done';
   showToast(`✅ Encaissé${state.client?' · +'+earned+' pts':''}`,'#8fc98a');
   render();
-  setTimeout(()=>{state.step='catalog';render();},2500);
+  setTimeout(()=>{state.step='catalog';state.client=null;state.transactions=[];render();},2500);
 }
 
 async function redeemReward(rewardId){

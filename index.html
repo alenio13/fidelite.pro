@@ -128,7 +128,7 @@ const LEVELS = [
 ];
 const PT_VAL = 0.01;
 const CATS = [...new Set(CATALOG.map(p=>p.cat))];
-const CAISSIER_PWD = "caisse2024";
+const CAISSIER_PWD = "0123456789";
 
 function getLevel(p){return LEVELS.find(l=>p>=l.min&&p<=l.max)||LEVELS[0]}
 function getBadgeClass(pts){const n=getLevel(pts).name;return n==='Argent'?'badge badge-argent':n==='Or'?'badge badge-or':n==='Platine'?'badge badge-platine':'badge'}

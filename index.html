@@ -296,6 +296,7 @@ function renderLogin(){
         <div style="margin-top:20px;border-top:1px solid #1e1e1e;padding-top:16px">
           <div style="font-size:13px;color:#555;text-align:center;margin-bottom:12px">Ou accéder à votre carte client</div>
           <input class="input" type="tel" id="tel-input" placeholder="Votre numéro de téléphone" onkeydown="if(event.key==='Enter')loginClient()">
+          <input class="input" type="password" id="pin-input" placeholder="Votre code PIN" maxlength="4" onkeydown="if(event.key==='Enter')loginClient()">
           <button class="btn-primary" style="background:#1a1a1a;color:#c8956c;border:1px solid rgba(200,149,108,.3)" onclick="loginClient()">Voir ma carte</button>
         </div>
       </div>

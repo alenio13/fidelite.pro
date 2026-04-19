@@ -212,10 +212,10 @@ function render(){
     <div class="app">
       <div class="header"><div class="header-sub">boulangerie · programme fidélité</div><div class="header-title">${SHOP_NAME}</div></div>
       <div class="view-switch">
-        ${state.role==='patron'?`<button class="view-btn active-patron"><div>👑 Patron</div><div>Tableau de bord</div></button>`:`
-        <button class="view-btn ${state.view==='cashier'?'active':''}" onclick="switchView('cashier')"><div>🏪 Caisse</div><div>${state.caissierActif?state.caissierActif.nom:'Caissier'}</div></button>`}
-        <button class="view-btn ${state.view==='client'?'active active-client':''}" onclick="switchView('client')"><div>👤 Client</div><div>Ma carte</div></button>
-        <button class="view-btn" onclick="logout()" style="color:#444;max-width:55px"><div>⏏️</div><div>Quitter</div></button>
+        ${state.role==='patron'?`<button class="view-btn active-patron"><div>👑 Patron</div><div>Tableau de bord</div></button>`:''}
+${state.role==='caissier'?`<button class="view-btn active"><div>🏪 Caisse</div><div>${state.caissierActif?state.caissierActif.nom:'Caissier'}</div></button>`:''}
+${state.role==='client'?`<button class="view-btn active active-client"><div>👤 Client</div><div>Ma carte</div></button>`:''}
+<button class="view-btn" onclick="logout()" style="color:#444;max-width:55px"><div>⏏️</div><div>Quitter</div></button>
       </div>
       ${state.client&&state.view!=='patron'?renderClientStrip():''}
       ${state.role==='patron'?renderPatron():state.view==='cashier'?renderCashier():renderClient()}

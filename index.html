@@ -509,12 +509,34 @@ async function addColis(type){
   await sb.from('clients').update({['pts_'+randCat]:newVal, last_colis:today()}).eq('id',state.client.id);
   state.client['pts_'+randCat]=newVal;
   state.colisToday=true;
+state.lastColisData={col:'pts_'+randCat,valBefore:newVal-1};
 
-  // Enregistrer transaction
   const caissierNom=state.caissierActif?state.caissierActif.nom:null;
-  await sb.from('transactions').insert({client_id:state.client.id,label:`📦 Colis ${type} → +1 pt bonus ${rule.icon}`,points:1,type:'earn',caissier_nom:caissierNom});
+  const txLabel=`📦 Colis ${type} → +1 pt bonus ${rule.icon}`;
+  await sb.from('transactions').insert({client_id:state.client.id,label:txLabel,points:1,type:'earn',caissier_nom:caissierNom});
+  state.lastColisData.txLabel=txLabel;
 
-  showToast(`📦 Colis ${type} · +1 pt ${rule.icon} (${rule.label})`,'#7eb8d4');
+  showToast(`📦 Colis ${type} · +1 pt ${rule.icon}`,'#7eb8d4');
+
+  const cancelDiv=document.createElement('div');
+  cancelDiv.id='cancel-colis';
+  cancelDiv.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;border:1px solid rgba(232,112,112,.4);border-radius:14px;padding:12px 20px;display:flex;gap:12px;align-items:center;z-index:998;box-shadow:0 8px 30px rgba(0,0,0,.6)';
+  cancelDiv.innerHTML=`<span style="font-size:13px;color:#7eb8d4">📦 Colis enregistré</span><button onclick="cancelColis()" style="background:rgba(232,112,112,.15);border:1px solid rgba(232,112,112,.4);color:#e87070;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer">↩️ Annuler</button>`;
+  document.body.appendChild(cancelDiv);
+  setTimeout(()=>{const d=document.getElementById('cancel-colis');if(d)d.remove();},10000);
+  render();
+}
+
+async function cancelColis(){
+  if(!state.lastColisData||!state.client)return;
+  const {col,valBefore,txLabel}=state.lastColisData;
+  await sb.from('clients').update({[col]:valBefore,last_colis:null}).eq('id',state.client.id);
+  state.client[col]=valBefore;
+  state.colisToday=false;
+  state.lastColisData=null;
+  const d=document.getElementById('cancel-colis');if(d)d.remove();
+  await sb.from('transactions').delete().eq('client_id',state.client.id).eq('label',txLabel);
+  showToast('↩️ Colis annulé','#e87070');
   render();
 }
 

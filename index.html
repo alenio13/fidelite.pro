@@ -67,7 +67,7 @@ body{background:#0a0a0a;color:#f0ece4;font-family:'Helvetica Neue',sans-serif;mi
 .del-btn{background:rgba(232,112,112,.1);border:1px solid rgba(232,112,112,.3);color:#e87070;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
 .client-row{background:#111;border:1px solid #1c1c1c;border-radius:14px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;cursor:pointer;transition:all .2s}
 .client-row:hover{background:#161616;border-color:rgba(200,149,108,.3)}
-.tx-row{background:#111;border:1px solid #1c1c1c;border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.tx-row{background:#111;border:1px solid #1c1c1c;border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .tx-list{display:flex;flex-direction:column;gap:7px}
 .qr-section{background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:18px;margin-top:14px;display:flex;flex-direction:column;align-items:center;gap:10px}
 .qr-div{border-radius:12px;background:#fff;padding:10px;display:flex;align-items:center;justify-content:center}
@@ -81,9 +81,7 @@ body{background:#0a0a0a;color:#f0ece4;font-family:'Helvetica Neue',sans-serif;mi
 .scan-line{position:absolute;width:100%;height:2px;background:linear-gradient(90deg,transparent,#c8956c,transparent);animation:scanAnim 2s linear infinite}
 @keyframes scanAnim{0%{top:10%}100%{top:90%}}
 .scan-close{background:#1a1a1a;border:1px solid #333;color:#ccc;border-radius:12px;padding:12px 28px;font-size:14px;cursor:pointer}
-/* Produit patron */
 .produit-row{background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:14px 16px;margin-bottom:10px}
-.produit-row.inactive{opacity:.4}
 #barcode-input{position:fixed;opacity:0;pointer-events:none;top:-999px}
 </style>
 </head>
@@ -91,8 +89,8 @@ body{background:#0a0a0a;color:#f0ece4;font-family:'Helvetica Neue',sans-serif;mi
 <div id="root"></div>
 <input id="barcode-input" type="text" autocomplete="off">
 <script>
-const SUPABASE_URL = 'https://tgrqfrijwjonrehixgre.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Dk_GsamMzY1KRRIELRxngQ_xsH1Xxkr';
+const SUPABASE_URL = 'METTEZ_VOTRE_URL_ICI';
+const SUPABASE_KEY = 'METTEZ_VOTRE_CLE_ICI';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const SHOP_NAME = "La craquante de lesigny";
@@ -107,35 +105,44 @@ const LEVELS=[
 function getLevel(p){return LEVELS.find(l=>p>=l.min&&p<=l.max)||LEVELS[0]}
 function getBadgeClass(pts){const n=getLevel(pts).name;return n==='Argent'?'badge badge-argent':n==='Or'?'badge badge-or':n==='Platine'?'badge badge-platine':'badge'}
 function today(){return new Date().toISOString().split('T')[0]}
-function produitCol(id){return 'pts_p'+id.replace(/-/g,'').substring(0,8)}
 
 // ── ÉTAT ──────────────────────────────────────────────────────────────────────
 let state={
   view:'login',role:null,
   caissierActif:null,
   client:null,transactions:[],
-  products:[], // chargés depuis Supabase
+  clientPoints:{}, // {produit_id: points}
+  products:[],
   cart:{},
-  colisToday:false,
-  lastColisData:null,
+  colisToday:false,lastColisData:null,
   step:'catalog',
   clientTab:'card',
   patronTab:'stats',
-  selectedClient:null,selectedClientTx:[],
+  selectedClient:null,selectedClientTx:[],selectedClientPoints:{},
   clientSearch:'',
   scanning:false,toast:null,
   caissiers:[],allTransactions:[],allClients:[],
-  editingProduct:null, // produit en cours d'édition
+  editingProduct:null,
 };
 
-// ── CHARGEMENT PRODUITS ───────────────────────────────────────────────────────
+// ── PRODUITS ──────────────────────────────────────────────────────────────────
 async function loadProducts(){
   const {data}=await sb.from('produits').select('*').eq('actif',true).order('ordre');
   state.products=data||[];
 }
-async function loadAllProducts(){
-  const {data}=await sb.from('produits').select('*').order('ordre');
-  return data||[];
+
+// ── POINTS PRODUITS ───────────────────────────────────────────────────────────
+async function loadClientPoints(clientId){
+  const {data}=await sb.from('points_produits').select('*').eq('client_id',clientId);
+  state.clientPoints={};
+  (data||[]).forEach(r=>{state.clientPoints[r.produit_id]=r.points;});
+}
+
+async function upsertClientPoints(clientId, produitId, newPoints){
+  await sb.from('points_produits').upsert(
+    {client_id:clientId, produit_id:produitId, points:newPoints},
+    {onConflict:'client_id,produit_id'}
+  );
 }
 
 // ── SCANNER ───────────────────────────────────────────────────────────────────
@@ -223,7 +230,6 @@ function renderClientStrip(){
     <span style="font-size:15px;font-weight:700;color:#c8956c;font-family:monospace">${c.points} pts</span>
   </div>`;
 }
-
 function renderScanner(){return`
   <canvas id="scan-canvas" style="display:none"></canvas>
   <div class="scan-overlay">
@@ -282,13 +288,13 @@ async function loginClient(){
   else showToast('Numéro ou PIN incorrect','#e87070');
 }
 function logout(){
-  Object.assign(state,{view:'login',role:null,caissierActif:null,client:null,transactions:[],cart:{},colisToday:false,pendingRewards:[],step:'catalog',selectedClient:null,clientTab:'card',products:[]});
+  Object.assign(state,{view:'login',role:null,caissierActif:null,client:null,transactions:[],clientPoints:{},cart:{},colisToday:false,step:'catalog',selectedClient:null,clientTab:'card',products:[]});
   render();
 }
 async function loadClient(data){
   state.client=data;
   state.colisToday=(data.last_colis===today());
-  await loadTransactions(data.id);
+  await Promise.all([loadTransactions(data.id),loadClientPoints(data.id)]);
 }
 
 // ── CAISSE ────────────────────────────────────────────────────────────────────
@@ -301,7 +307,6 @@ function renderCashier(){
   const items=state.products.filter(p=>(state.cart[p.id]||0)>0);
   const total=items.reduce((s,p)=>s+p.prix*(state.cart[p.id]||0),0);
   const cartCount=Object.values(state.cart).reduce((s,v)=>s+v,0);
-
   if(state.step==='summary')return renderSummary(items,total);
 
   return`
@@ -317,7 +322,7 @@ function renderCashier(){
           <div style="font-size:13px;color:#e0ddd8;font-weight:500;margin-bottom:6px">${p.nom}</div>
           <div style="display:flex;justify-content:space-between;align-items:center">
             <span style="font-size:12px;color:#777">${parseFloat(p.prix).toFixed(2)} €</span>
-            <span style="background:rgba(200,149,108,.15);color:#c8956c;border:1px solid rgba(200,149,108,.3);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700">+1 ${p.icon} · /${p.seuil}</span>
+            <span style="background:rgba(200,149,108,.15);color:#c8956c;border:1px solid rgba(200,149,108,.3);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700">/${p.seuil} ${p.icon}</span>
           </div>
           ${qty>0?`<div class="qty-badge">${qty}</div>`:''}
         </button>`;
@@ -326,26 +331,34 @@ function renderCashier(){
 
     <div class="section-title">Colis</div>
     <div class="colis-btns">
-      <button class="colis-btn" onclick="addColis('déposé')" ${state.colisToday?'disabled style="opacity:.4;cursor:not-allowed"':''}>
+      <button class="colis-btn" onclick="addColis('déposé')" ${state.colisToday||!state.client?'disabled':''} style="${state.colisToday||!state.client?'opacity:.4;cursor:not-allowed':''}">
         <div style="font-size:24px;margin-bottom:6px">📦</div>
         <div style="font-size:13px;color:#7eb8d4;font-weight:600">Colis déposé</div>
-        <div style="font-size:11px;color:#444;margin-top:3px">${state.colisToday?'Déjà fait aujourd\'hui':'+ 1 pt bonus si achat'}</div>
+        <div style="font-size:11px;color:#444;margin-top:3px">${state.colisToday?'Déjà fait':'+ 1 pt si achat'}</div>
       </button>
-      <button class="colis-btn" onclick="addColis('récupéré')" ${state.colisToday?'disabled style="opacity:.4;cursor:not-allowed"':''}>
+      <button class="colis-btn" onclick="addColis('récupéré')" ${state.colisToday||!state.client?'disabled':''} style="${state.colisToday||!state.client?'opacity:.4;cursor:not-allowed':''}">
         <div style="font-size:24px;margin-bottom:6px">📬</div>
         <div style="font-size:13px;color:#7eb8d4;font-weight:600">Colis récupéré</div>
-        <div style="font-size:11px;color:#444;margin-top:3px">${state.colisToday?'Déjà fait aujourd\'hui':'+ 1 pt bonus si achat'}</div>
+        <div style="font-size:11px;color:#444;margin-top:3px">${state.colisToday?'Déjà fait':'+ 1 pt si achat'}</div>
       </button>
     </div>
 
     ${cartCount>0?`
       <div class="cart-bar">
-        <button class="cart-btn" onclick="state.step='summary';render()">
+        <button class="cart-btn" onclick="goToSummary()">
           <span style="background:rgba(0,0,0,.15);border-radius:20px;padding:3px 10px;font-size:13px">${cartCount} article${cartCount>1?'s':''}</span>
           <span>Récapitulatif →</span>
           <span>${total.toFixed(2)} €</span>
         </button>
       </div>`:`<div class="empty">Ajoutez un article ↑</div>`}`;
+}
+
+function goToSummary(){
+  if(!state.client){
+    showToast('⚠️ Identifiez le client avant de continuer','#e87070');
+    return;
+  }
+  state.step='summary';render();
 }
 
 function renderClientSearch(){
@@ -365,8 +378,8 @@ function renderClientSearch(){
       <button onclick="updatePIN()" class="btn-primary" style="margin-top:0">Enregistrer</button>
     </div>`;
   return`
-    <div style="background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:14px 16px;margin-bottom:16px">
-      <div class="section-title" style="margin-bottom:10px">Identifier le client</div>
+    <div style="background:#111;border:1px solid rgba(232,112,112,.2);border-radius:16px;padding:14px 16px;margin-bottom:16px">
+      <div style="font-size:12px;color:#e87070;margin-bottom:10px;font-weight:600">⚠️ Identifiez le client avant d'encaisser</div>
       <button onclick="startScan()" style="width:100%;background:rgba(200,149,108,.1);border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px">
         <span>📷</span> Scanner le QR code
       </button>
@@ -385,16 +398,15 @@ function renderClientSearch(){
     </div>`;
 }
 
-function renderSummary(items, total){
+function renderSummary(items,total){
+  // Calculer récompenses
   const rewards=[];
   items.forEach(p=>{
     const qty=state.cart[p.id]||0;
-    const col=produitCol(p.id);
-    const before=state.client?(state.client[col]||0):0;
+    const before=state.clientPoints[p.id]||0;
     const after=before+qty;
-    const beforeR=Math.floor(before/p.seuil);
-    const afterR=Math.floor(after/p.seuil);
-    if(afterR>beforeR)rewards.push({p,count:afterR-beforeR});
+    const r=Math.floor(after/p.seuil)-Math.floor(before/p.seuil);
+    if(r>0)rewards.push({p,count:r});
   });
 
   return`
@@ -416,29 +428,32 @@ function renderSummary(items, total){
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:13px;color:#aaa">${(p.prix*state.cart[p.id]).toFixed(2)} €</span>
+            <span style="font-size:13px;color:#aaa">${(p.prix*(state.cart[p.id]||0)).toFixed(2)} €</span>
             <button onclick="removeFromCart('${p.id}')" style="width:22px;height:22px;border-radius:50%;background:#2a2a2a;border:none;color:#888;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
           </div>
         </div>`).join('')}
     </div>
-    ${state.client?`
+
+    <!-- Aperçu jauges -->
     <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:14px;padding:14px;margin-bottom:14px">
       <div class="section-title" style="margin-bottom:10px">Points après cet achat</div>
       ${items.map(p=>{
         const qty=state.cart[p.id]||0;
-        const col=produitCol(p.id);
-        const val=((state.client?(state.client[col]||0):0)+qty)%p.seuil||p.seuil;
-        const prog=(val/p.seuil)*100;
-        const reste=p.seuil-val;
+        const before=state.clientPoints[p.id]||0;
+        const afterTotal=before+qty;
+        const afterMod=afterTotal%p.seuil;
+        const prog=(afterMod/p.seuil)*100;
+        const reste=afterMod===0?0:p.seuil-afterMod;
         return`<div style="margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
             <span style="color:#ddd">${p.icon} ${p.nom}</span>
-            <span style="color:#777">${val===p.seuil?'🎁 Offert !':reste+' restant'+(reste>1?'s':'')}</span>
+            <span style="color:#777">${afterMod===0&&afterTotal>0?'🎁 Offert !':reste>0?reste+' restant'+(reste>1?'s':''):'Prochain: '+p.seuil}</span>
           </div>
-          <div class="gauge-bar"><div class="gauge-fill" style="width:${prog>=100?100:prog}%;background:${prog>=80?'#7ec87e':prog>=50?'#f9d056':'#c8956c'}"></div></div>
+          <div class="gauge-bar"><div class="gauge-fill" style="width:${afterMod===0&&afterTotal>0?100:prog}%;background:${prog>=80||afterMod===0?'#7ec87e':prog>=50?'#f9d056':'#c8956c'}"></div></div>
         </div>`;
       }).join('')}
-    </div>`:''}
+    </div>
+
     <div class="summary-box">
       <div class="summary-row">
         <span style="font-size:18px;font-weight:700">Total</span>
@@ -451,7 +466,7 @@ function renderSummary(items, total){
 // ── ACTIONS CAISSE ────────────────────────────────────────────────────────────
 function addToCart(id){state.cart[id]=(state.cart[id]||0)+1;render();}
 function removeFromCart(id){state.cart[id]=Math.max(0,(state.cart[id]||0)-1);render();}
-function clearClient(){state.client=null;state.transactions=[];state.colisToday=false;render();}
+function clearClient(){state.client=null;state.transactions=[];state.clientPoints={};state.colisToday=false;render();}
 function showNewClient(){const f=document.getElementById('new-client-form');if(f)f.style.display=f.style.display==='none'?'block':'none';}
 function showChangePIN(){const f=document.getElementById('change-pin-form');if(f)f.style.display=f.style.display==='none'?'block':'none';}
 
@@ -459,18 +474,19 @@ async function addColis(type){
   if(state.colisToday)return showToast('Colis déjà enregistré aujourd\'hui','#e87070');
   if(!state.client)return showToast('Identifiez d\'abord le client','#e87070');
   const hasProduct=Object.values(state.cart).some(v=>v>0);
-  if(!hasProduct)return showToast('Le client doit acheter un produit pour gagner le point colis','#e87070');
+  if(!hasProduct)return showToast('Le client doit acheter un produit','#e87070');
   const prodsInCart=state.products.filter(p=>(state.cart[p.id]||0)>0);
   const randProd=prodsInCart[Math.floor(Math.random()*prodsInCart.length)];
-  const col=produitCol(randProd.id);
-  const newVal=(state.client[col]||0)+1;
-  await sb.from('clients').update({[col]:newVal,last_colis:today()}).eq('id',state.client.id);
-  state.client[col]=newVal;
+  const before=state.clientPoints[randProd.id]||0;
+  const newVal=before+1;
+  await upsertClientPoints(state.client.id,randProd.id,newVal);
+  await sb.from('clients').update({last_colis:today()}).eq('id',state.client.id);
+  state.clientPoints[randProd.id]=newVal;
   state.colisToday=true;
   const caissierNom=state.caissierActif?state.caissierActif.nom:null;
   const txLabel=`📦 Colis ${type} → +1 pt bonus ${randProd.icon}`;
   await sb.from('transactions').insert({client_id:state.client.id,label:txLabel,points:1,type:'earn',caissier_nom:caissierNom});
-  state.lastColisData={col,valBefore:newVal-1,txLabel};
+  state.lastColisData={produitId:randProd.id,valBefore:before,txLabel};
   showToast(`📦 Colis ${type} · +1 pt ${randProd.icon}`,'#7eb8d4');
   const cancelDiv=document.createElement('div');
   cancelDiv.id='cancel-colis';
@@ -483,62 +499,47 @@ async function addColis(type){
 
 async function cancelColis(){
   if(!state.lastColisData||!state.client)return;
-  const {col,valBefore,txLabel}=state.lastColisData;
-  await sb.from('clients').update({[col]:valBefore,last_colis:null}).eq('id',state.client.id);
-  state.client[col]=valBefore;
-  state.colisToday=false;
-  state.lastColisData=null;
+  const {produitId,valBefore,txLabel}=state.lastColisData;
+  await upsertClientPoints(state.client.id,produitId,valBefore);
+  await sb.from('clients').update({last_colis:null}).eq('id',state.client.id);
+  state.clientPoints[produitId]=valBefore;
+  state.colisToday=false;state.lastColisData=null;
   const d=document.getElementById('cancel-colis');if(d)d.remove();
   await sb.from('transactions').delete().eq('client_id',state.client.id).eq('label',txLabel);
-  showToast('↩️ Colis annulé','#e87070');
-  render();
+  showToast('↩️ Colis annulé','#e87070');render();
 }
 
 async function handlePay(){
   const items=state.products.filter(p=>(state.cart[p.id]||0)>0);
   if(!items.length)return;
+  if(!state.client)return showToast('Identifiez le client avant d\'encaisser','#e87070');
   const caissierNom=state.caissierActif?state.caissierActif.nom:null;
-  if(state.client){
-    const updates={};
-    let globalPts=0;
-    items.forEach(p=>{
-      const qty=state.cart[p.id]||0;
-      const col=produitCol(p.id);
-      const before=state.client[col]||0;
-      const after=before+qty;
-      const beforeR=Math.floor(before/p.seuil);
-      const afterR=Math.floor(after/p.seuil);
-      // Déduire les récompenses gagnées
-      updates[col]=afterR>beforeR ? after-(afterR*p.seuil) : after;
-      globalPts+=qty;
-    });
-    updates.points=(state.client.points||0)+globalPts;
-    await sb.from('clients').update(updates).eq('id',state.client.id);
+  let globalPts=0;
 
-    // 1 seule ligne pour tout le passage
-    const label=items.map(p=>`${state.cart[p.id]}× ${p.nom}`).join(' · ');
-    const totalPts=items.reduce((s,p)=>s+(state.cart[p.id]||0),0);
-    await sb.from('transactions').insert({client_id:state.client.id,label,points:totalPts,type:'earn',caissier_nom:caissierNom});
-
-    // Transactions pour les récompenses offertes
-    items.forEach(async p=>{
-      const qty=state.cart[p.id]||0;
-      const col=produitCol(p.id);
-      const before=state.client[col]||0;
-      const after=before+qty;
-      const beforeR=Math.floor(before/p.seuil);
-      const afterR=Math.floor(after/p.seuil);
-      if(afterR>beforeR){
-        await sb.from('transactions').insert({client_id:state.client.id,label:`🎁 ${afterR-beforeR}× ${p.nom} offert`,points:-(afterR-beforeR)*p.seuil,type:'redeem',caissier_nom:caissierNom});
-      }
-    });
-
-    Object.assign(state.client,updates);
+  for(const p of items){
+    const qty=state.cart[p.id]||0;
+    const before=state.clientPoints[p.id]||0;
+    const afterTotal=before+qty;
+    const rewardsEarned=Math.floor(afterTotal/p.seuil)-Math.floor(before/p.seuil);
+    const newPoints=afterTotal-(Math.floor(afterTotal/p.seuil)*p.seuil);
+    await upsertClientPoints(state.client.id,p.id,newPoints);
+    state.clientPoints[p.id]=newPoints;
+    globalPts+=qty;
+    if(rewardsEarned>0){
+      await sb.from('transactions').insert({client_id:state.client.id,label:`🎁 ${rewardsEarned}× ${p.nom} offert`,points:-(rewardsEarned*p.seuil),type:'redeem',caissier_nom:caissierNom});
+    }
   }
+
+  // 1 seule ligne pour tout le passage
+  const label=items.map(p=>`${state.cart[p.id]}× ${p.nom}`).join(' · ');
+  await sb.from('transactions').insert({client_id:state.client.id,label,points:globalPts,type:'earn',caissier_nom:caissierNom});
+  const newTotal=(state.client.points||0)+globalPts;
+  await sb.from('clients').update({points:newTotal}).eq('id',state.client.id);
+  state.client.points=newTotal;
+
   state.cart={};state.step='done';
-  showToast('✅ Encaissé !','#8fc98a');
-  render();
-  setTimeout(()=>{state.step='catalog';state.client=null;state.transactions=[];state.colisToday=false;render();},2500);
+  showToast('✅ Encaissé !','#8fc98a');render();
+  setTimeout(()=>{state.step='catalog';state.client=null;state.transactions=[];state.clientPoints={};state.colisToday=false;render();},2500);
 }
 
 async function searchClient(){
@@ -556,8 +557,7 @@ async function createClient(){
   if(!pin||pin.length!==4)return showToast('PIN doit faire 4 chiffres','#e87070');
   const {data,error}=await sb.from('clients').insert({nom,telephone:tel,points:0,pin}).select().single();
   if(error)return showToast('Numéro déjà utilisé','#e87070');
-  await loadClient(data);
-  showToast(`✅ ${nom} inscrit !`,'#8fc98a');render();
+  await loadClient(data);showToast(`✅ ${nom} inscrit !`,'#8fc98a');render();
 }
 async function updatePIN(){
   const pin=document.getElementById('new-pin-client')?.value?.trim();
@@ -628,8 +628,7 @@ function renderClientJauges(c){
     <div class="section-title">Mes points par produit</div>
     <div class="gauge-grid">
       ${state.products.map(p=>{
-        const col=produitCol(p.id);
-        const val=c[col]||0;
+        const val=state.clientPoints[p.id]||0;
         const prog=(val/p.seuil)*100;
         const restant=p.seuil-val;
         return`<div class="gauge-row">
@@ -638,9 +637,7 @@ function renderClientJauges(c){
               <span style="font-size:20px">${p.icon}</span>
               <span style="font-size:14px;color:#ddd;font-weight:500">${p.nom}</span>
             </div>
-            <div style="text-align:right">
-              <div style="font-size:15px;font-weight:700;color:#c8956c;font-family:monospace">${val}/${p.seuil}</div>
-            </div>
+            <div style="font-size:15px;font-weight:700;color:#c8956c;font-family:monospace">${val}/${p.seuil}</div>
           </div>
           <div class="gauge-bar"><div class="gauge-fill" style="width:${Math.min(100,prog)}%;background:${prog>=80?'#7ec87e':prog>=50?'#f9d056':'#c8956c'}"></div></div>
           <div style="font-size:11px;color:#444;margin-top:5px">${restant===0?'🎉 Récompense disponible !':restant+' achat'+(restant>1?'s':'')+' avant 1 '+p.nom+' offert'}</div>
@@ -652,21 +649,19 @@ function renderClientJauges(c){
     </div>`;
 }
 
-function renderClientHistory(){
-  return`
-    <div class="section-title">30 dernières transactions</div>
-    <div class="tx-list">
-      ${state.transactions.length===0?`<div class="empty">Aucune transaction</div>`:''}
-      ${state.transactions.map(tx=>`
-        <div class="tx-row">
-          <div>
-            <div style="font-size:13px;color:#ddd;margin-bottom:2px">${tx.label}</div>
-            <div style="font-size:11px;color:#444">${new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div>
-          </div>
-          <div style="font-family:monospace;font-weight:700;font-size:13px;color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pt${Math.abs(tx.points)>1?'s':''}</div>
-        </div>`).join('')}
-    </div>`;
-}
+function renderClientHistory(){return`
+  <div class="section-title">30 dernières transactions</div>
+  <div class="tx-list">
+    ${state.transactions.length===0?`<div class="empty">Aucune transaction</div>`:''}
+    ${state.transactions.map(tx=>`
+      <div class="tx-row">
+        <div>
+          <div style="font-size:13px;color:#ddd;margin-bottom:2px">${tx.label}</div>
+          <div style="font-size:11px;color:#444">${new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div>
+        </div>
+        <div style="font-family:monospace;font-weight:700;font-size:13px;color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pt${Math.abs(tx.points)>1?'s':''}</div>
+      </div>`).join('')}
+  </div>`;}
 
 // ── PATRON ────────────────────────────────────────────────────────────────────
 async function loadPatronData(){
@@ -679,10 +674,16 @@ async function loadPatronData(){
   await loadProducts();
 }
 
-async function selectPatronClient(client){
-  state.selectedClient=client;
-  const {data}=await sb.from('transactions').select('*').eq('client_id',client.id).order('created_at',{ascending:false}).limit(30);
-  state.selectedClientTx=data||[];render();
+async function selectPatronClient(clientId,clientObj){
+  state.selectedClient=clientObj;
+  const [{data:txs},{data:pts}]=await Promise.all([
+    sb.from('transactions').select('*').eq('client_id',clientId).order('created_at',{ascending:false}).limit(30),
+    sb.from('points_produits').select('*').eq('client_id',clientId),
+  ]);
+  state.selectedClientTx=txs||[];
+  state.selectedClientPoints={};
+  (pts||[]).forEach(r=>{state.selectedClientPoints[r.produit_id]=r.points;});
+  render();
 }
 
 function renderPatron(){
@@ -702,7 +703,6 @@ function renderPatron(){
     <div class="tabs">
       ${PTABS.map(t=>`<button class="tab ${state.patronTab===t.id?'active':''}" style="${state.patronTab===t.id?'color:#f9d056;border-color:rgba(249,208,86,.3)':''}" onclick="state.patronTab='${t.id}';render()">${t.l}</button>`).join('')}
     </div>
-
     ${state.patronTab==='stats'?`
       <div class="stat-grid">
         <div class="stat-card"><div class="stat-val">${state.allClients.length}</div><div class="stat-label">Clients</div></div>
@@ -713,14 +713,12 @@ function renderPatron(){
       <div class="section-title">Par caissier</div>
       ${Object.keys(statsCaissier).length===0?`<div class="empty">Aucune activité</div>`:Object.entries(statsCaissier).map(([nom,s])=>`
         <div class="caissier-row"><div><div style="font-size:14px;color:#ddd;font-weight:600">${nom}</div><div style="font-size:12px;color:#555;margin-top:2px">${s.tx} transaction${s.tx>1?'s':''}</div></div><div style="font-size:14px;color:#c8956c;font-weight:700">+${s.pts} pts</div></div>`).join('')}`:''}
-
     ${state.patronTab==='produits'?renderPatronProduits():''}
-
     ${state.patronTab==='clients'?`
       <input class="input" type="text" placeholder="🔍 Rechercher..." oninput="state.clientSearch=this.value;render()" value="${state.clientSearch}" style="margin-bottom:12px">
       <div style="font-size:12px;color:#555;margin-bottom:12px">${filtered.length} client${filtered.length>1?'s':''}</div>
       ${filtered.map(c=>{const lv=getLevel(c.points);return`
-        <div class="client-row" onclick="selectPatronClient(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+        <div class="client-row" onclick="selectPatronClient('${c.id}',${JSON.stringify(c).replace(/"/g,'&quot;')})">
           <div><div style="font-size:14px;color:#ddd;font-weight:600">${c.nom}</div><div style="font-size:12px;color:#555;margin-top:2px">${c.telephone} · ${new Date(c.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div></div>
           <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px">
             <span class="${getBadgeClass(c.points)}">${lv.name}</span>
@@ -728,7 +726,6 @@ function renderPatron(){
           </div>
         </div>`}).join('')}
       ${filtered.length===0?`<div class="empty">Aucun client trouvé</div>`:''}`:''}
-
     ${state.patronTab==='caissiers'?`
       <div style="background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:16px;margin-bottom:16px">
         <div class="section-title">Créer un caissier</div>
@@ -740,65 +737,46 @@ function renderPatron(){
       ${state.caissiers.filter(c=>c.actif).map(c=>`
         <div class="caissier-row"><div><div style="font-size:14px;color:#ddd;font-weight:600">${c.nom}</div><div style="font-size:12px;color:#555;margin-top:2px">Code : <span style="color:#c8956c;font-family:monospace">${c.code}</span></div></div><button class="del-btn" onclick="deleteCaissier('${c.id}')">Désactiver</button></div>`).join('')}
       ${state.caissiers.filter(c=>c.actif).length===0?`<div class="empty">Aucun caissier actif</div>`:''}`:''}
-
     ${state.patronTab==='activite'?`
       <div class="section-title">Dernières transactions</div>
       <div class="tx-list">
         ${state.allTransactions.slice(0,50).map(tx=>`
-          <div class="tx-row"><div><div style="font-size:13px;color:#ddd;margin-bottom:2px">${tx.label}</div><div style="font-size:11px;color:#444;display:flex;gap:8px"><span>${new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>${tx.caissier_nom?`<span style="color:#666">· ${tx.caissier_nom}</span>`:''}</div></div><div style="font-family:monospace;font-weight:700;font-size:13px;color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pt${Math.abs(tx.points)>1?'s':''}</div></div>`).join('')}
+          <div class="tx-row"><div style="flex:1"><div style="font-size:13px;color:#ddd;margin-bottom:2px">${tx.label}</div><div style="font-size:11px;color:#444;display:flex;gap:8px"><span>${new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>${tx.caissier_nom?`<span style="color:#666">· ${tx.caissier_nom}</span>`:''}</div></div><div style="font-family:monospace;font-weight:700;font-size:13px;color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pt${Math.abs(tx.points)>1?'s':''}</div></div>`).join('')}
         ${state.allTransactions.length===0?`<div class="empty">Aucune activité</div>`:''}
       </div>`:''}`;
 }
 
-// ── GESTION PRODUITS (PATRON) ─────────────────────────────────────────────────
 function renderPatronProduits(){
   return`
-    <!-- Formulaire ajout -->
     <div style="background:#111;border:1px solid rgba(249,208,86,.2);border-radius:16px;padding:16px;margin-bottom:16px">
       <div class="section-title">Ajouter un produit</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <input class="input-sm" id="p-icon" placeholder="Icône (ex: 🍕)" style="margin-bottom:0">
-        <input class="input-sm" id="p-nom" placeholder="Nom du produit" style="margin-bottom:0">
+        <input class="input-sm" id="p-icon" placeholder="Icône (ex: 🍕)">
+        <input class="input-sm" id="p-nom" placeholder="Nom du produit">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-        <div>
-          <div style="font-size:10px;color:#555;margin-bottom:4px;letter-spacing:1px">PRIX (€)</div>
-          <input class="input-sm" id="p-prix" type="number" step="0.01" placeholder="1.20" style="margin-bottom:0">
-        </div>
-        <div>
-          <div style="font-size:10px;color:#555;margin-bottom:4px;letter-spacing:1px">SEUIL AVANT GRATUIT</div>
-          <input class="input-sm" id="p-seuil" type="number" placeholder="10" style="margin-bottom:0">
-        </div>
+        <div><div style="font-size:10px;color:#555;margin-bottom:4px">PRIX (€)</div><input class="input-sm" id="p-prix" type="number" step="0.01" placeholder="1.20"></div>
+        <div><div style="font-size:10px;color:#555;margin-bottom:4px">GRATUIT APRÈS X ACHATS</div><input class="input-sm" id="p-seuil" type="number" placeholder="10"></div>
       </div>
-      <button onclick="addProduit()" style="width:100%;background:rgba(249,208,86,.15);border:1px solid rgba(249,208,86,.3);color:#f9d056;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">+ Ajouter le produit</button>
+      <button onclick="addProduit()" style="width:100%;background:rgba(249,208,86,.15);border:1px solid rgba(249,208,86,.3);color:#f9d056;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">+ Ajouter</button>
     </div>
-
-    <!-- Liste produits -->
     <div class="section-title">Produits en vente (${state.products.length})</div>
     ${state.products.length===0?`<div class="empty">Aucun produit</div>`:''}
     ${state.products.map(p=>`
-      <div class="produit-row" id="produit-row-${p.id}">
+      <div class="produit-row">
         ${state.editingProduct===p.id?`
-          <!-- Mode édition -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-            <input class="input-sm" id="edit-icon-${p.id}" value="${p.icon}" placeholder="Icône">
-            <input class="input-sm" id="edit-nom-${p.id}" value="${p.nom}" placeholder="Nom">
+            <input class="input-sm" id="edit-icon-${p.id}" value="${p.icon}">
+            <input class="input-sm" id="edit-nom-${p.id}" value="${p.nom}">
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-            <div>
-              <div style="font-size:10px;color:#555;margin-bottom:4px">PRIX (€)</div>
-              <input class="input-sm" id="edit-prix-${p.id}" type="number" step="0.01" value="${p.prix}">
-            </div>
-            <div>
-              <div style="font-size:10px;color:#555;margin-bottom:4px">SEUIL AVANT GRATUIT</div>
-              <input class="input-sm" id="edit-seuil-${p.id}" type="number" value="${p.seuil}">
-            </div>
+            <div><div style="font-size:10px;color:#555;margin-bottom:4px">PRIX (€)</div><input class="input-sm" id="edit-prix-${p.id}" type="number" step="0.01" value="${p.prix}"></div>
+            <div><div style="font-size:10px;color:#555;margin-bottom:4px">GRATUIT APRÈS X ACHATS</div><input class="input-sm" id="edit-seuil-${p.id}" type="number" value="${p.seuil}"></div>
           </div>
           <div style="display:flex;gap:8px">
             <button onclick="saveProduit('${p.id}')" style="flex:1;background:#7ec87e;border:none;color:#0a0a0a;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">✓ Enregistrer</button>
             <button onclick="state.editingProduct=null;render()" style="flex:1;background:#1a1a1a;border:1px solid #2a2a2a;color:#666;border-radius:10px;padding:10px;font-size:13px;cursor:pointer">Annuler</button>
           </div>`:`
-          <!-- Mode affichage -->
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div style="display:flex;align-items:center;gap:10px">
               <span style="font-size:22px">${p.icon}</span>
@@ -809,7 +787,7 @@ function renderPatronProduits(){
             </div>
             <div style="display:flex;gap:6px">
               <button onclick="state.editingProduct='${p.id}';render()" style="background:rgba(200,149,108,.1);border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer">✏️</button>
-              <button onclick="toggleProduit('${p.id}',false)" style="background:rgba(232,112,112,.1);border:1px solid rgba(232,112,112,.3);color:#e87070;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer">🗑️</button>
+              <button onclick="deleteProduit('${p.id}','${p.nom}')" style="background:rgba(232,112,112,.1);border:1px solid rgba(232,112,112,.3);color:#e87070;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer">🗑️</button>
             </div>
           </div>`}
       </div>`).join('')}`;
@@ -824,10 +802,8 @@ async function addProduit(){
   const ordre=(state.products.length||0)+1;
   const {error}=await sb.from('produits').insert({nom,icon,prix,seuil,actif:true,ordre});
   if(error)return showToast('Erreur lors de l\'ajout','#e87070');
-  showToast(`✅ ${nom} ajouté !`,'#8fc98a');
-  await loadProducts();render();
+  showToast(`✅ ${nom} ajouté !`,'#8fc98a');await loadProducts();render();
 }
-
 async function saveProduit(id){
   const icon=document.getElementById(`edit-icon-${id}`)?.value?.trim();
   const nom=document.getElementById(`edit-nom-${id}`)?.value?.trim();
@@ -836,22 +812,18 @@ async function saveProduit(id){
   if(!nom||!prix)return showToast('Remplissez nom et prix','#e87070');
   await sb.from('produits').update({nom,icon,prix,seuil}).eq('id',id);
   state.editingProduct=null;
-  showToast('✅ Produit modifié !','#8fc98a');
-  await loadProducts();render();
+  showToast('✅ Produit modifié !','#8fc98a');await loadProducts();render();
 }
-
-async function toggleProduit(id,actif){
-  if(!confirm(`${actif?'Activer':'Supprimer'} ce produit ?`))return;
-  await sb.from('produits').update({actif}).eq('id',id);
-  showToast(actif?'✅ Produit activé':'🗑️ Produit supprimé',actif?'#8fc98a':'#e87070');
-  await loadProducts();render();
+async function deleteProduit(id,nom){
+  if(!confirm(`Supprimer "${nom}" ?`))return;
+  await sb.from('produits').update({actif:false}).eq('id',id);
+  showToast(`🗑️ ${nom} supprimé`,'#e87070');await loadProducts();render();
 }
 
 function renderPatronClientDetail(){
   const c=state.selectedClient;
   const level=getLevel(c.points);
   const nextLevel=LEVELS[LEVELS.indexOf(level)+1];
-  const prog=nextLevel?Math.min(100,((c.points-level.min)/(nextLevel.min-level.min))*100):100;
   const visits=state.selectedClientTx.filter(t=>t.type==='earn').length;
   return`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -879,15 +851,14 @@ function renderPatronClientDetail(){
       </div>
       <div class="section-title">Points par produit</div>
       ${state.products.map(p=>{
-        const col=produitCol(p.id);
-        const val=c[col]||0;
-        const prog2=(val/p.seuil)*100;
+        const val=state.selectedClientPoints[p.id]||0;
+        const prog=(val/p.seuil)*100;
         return`<div style="margin-bottom:8px">
           <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
             <span style="color:#bbb">${p.icon} ${p.nom}</span>
             <span style="color:#777">${val}/${p.seuil}</span>
           </div>
-          <div class="gauge-bar"><div class="gauge-fill" style="width:${Math.min(100,prog2)}%;background:${prog2>=80?'#7ec87e':prog2>=50?'#f9d056':'#c8956c'}"></div></div>
+          <div class="gauge-bar"><div class="gauge-fill" style="width:${Math.min(100,prog)}%;background:${prog>=80?'#7ec87e':prog>=50?'#f9d056':'#c8956c'}"></div></div>
         </div>`;
       }).join('')}
     </div>
@@ -895,7 +866,7 @@ function renderPatronClientDetail(){
     <div class="tx-list">
       ${state.selectedClientTx.length===0?`<div class="empty">Aucune transaction</div>`:''}
       ${state.selectedClientTx.map(tx=>`
-        <div class="tx-row" style="gap:8px">
+        <div class="tx-row">
           <div style="flex:1">
             <div style="font-size:13px;color:#ddd;margin-bottom:2px">${tx.label}</div>
             <div style="font-size:11px;color:#444;display:flex;gap:8px">
@@ -925,11 +896,11 @@ async function deleteCaissier(id){
 }
 async function deleteClient(id,nom){
   if(!confirm(`Supprimer définitivement ${nom} ?`))return;
+  await sb.from('points_produits').delete().eq('client_id',id);
   await sb.from('transactions').delete().eq('client_id',id);
   await sb.from('clients').delete().eq('id',id);
   state.selectedClient=null;
-  showToast(`🗑️ ${nom} supprimé`,'#e87070');
-  await loadPatronData();render();
+  showToast(`🗑️ ${nom} supprimé`,'#e87070');await loadPatronData();render();
 }
 async function deleteTx(txId){
   if(!confirm('Supprimer cette transaction ?'))return;
@@ -938,7 +909,7 @@ async function deleteTx(txId){
   const newPts=Math.max(0,(txs||[]).reduce((s,t)=>s+(t.points||0),0));
   await sb.from('clients').update({points:newPts}).eq('id',state.selectedClient.id);
   showToast('🗑️ Transaction supprimée','#e87070');
-  await selectPatronClient(state.selectedClient);
+  await selectPatronClient(state.selectedClient.id,state.selectedClient);
 }
 async function loadTransactions(clientId){
   const {data}=await sb.from('transactions').select('*').eq('client_id',clientId).order('created_at',{ascending:false}).limit(30);

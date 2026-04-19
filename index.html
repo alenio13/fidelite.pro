@@ -835,7 +835,10 @@ function renderPatronClientDetail(){
   const prog=next?Math.min(100,((c.points-level.min)/(next.min-level.min))*100):100;
   const visits=state.selectedClientTx.filter(t=>t.type==='earn').length;
   return`
-    <button class="back-btn" onclick="state.selectedClient=null;render()">← Retour à la liste</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+  <button class="back-btn" style="margin-bottom:0" onclick="state.selectedClient=null;render()">← Retour</button>
+  <button onclick="deleteClient('${state.selectedClient.id}','${state.selectedClient.nom}')" style="background:rgba(232,112,112,.1);border:1px solid rgba(232,112,112,.3);color:#e87070;border-radius:10px;padding:8px 14px;font-size:12px;cursor:pointer">🗑️ Supprimer le client</button>
+</div>
     <div style="background:#111;border:1px solid ${level.color}33;border-radius:16px;padding:16px;margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
         <div>
@@ -874,7 +877,7 @@ function renderPatronClientDetail(){
     <div class="tx-list">
       ${state.selectedClientTx.length===0?`<div class="empty">Aucune transaction</div>`:''}
       ${state.selectedClientTx.map(tx=>`
-        <div class="tx-row">
+        <div class="tx-row" style="gap:8px">
           <div>
             <div style="font-size:13px;color:#ddd;margin-bottom:2px">${tx.label}</div>
             <div style="font-size:11px;color:#444;display:flex;gap:8px">
@@ -882,8 +885,11 @@ function renderPatronClientDetail(){
               ${tx.caissier_nom?`<span style="color:#666">· ${tx.caissier_nom}</span>`:''}
             </div>
           </div>
-          <div style="font-family:monospace;font-weight:700;font-size:13px;color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pt${Math.abs(tx.points)>1?'s':''}</div>
-        </div>`).join('')}
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+              <div style="font-family:monospace;font-weight:700;font-size:13px;color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pt${Math.abs(tx.points)>1?'s':''}</div>
+              <button onclick="deleteTx('${tx.id}')" style="background:rgba(232,112,112,.1);border:1px solid rgba(232,112,112,.2);color:#e87070;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer">🗑️</button>
+            </div>
+          </div>`).join('')}
     </div>`;
 }
 
@@ -894,6 +900,24 @@ async function createCaissier(){
   const {error}=await sb.from('caissiers').insert({nom,code,actif:true});
   if(error)return showToast('Code déjà utilisé','#e87070');
   showToast(`✅ ${nom} créé !`,'#8fc98a');await loadPatronData();render();
+}
+  async function deleteClient(id,nom){
+  if(!confirm(`Supprimer définitivement ${nom} ?`))return;
+  await sb.from('transactions').delete().eq('client_id',id);
+  await sb.from('clients').delete().eq('id',id);
+  state.selectedClient=null;
+  showToast(`🗑️ ${nom} supprimé`,'#e87070');
+  await loadPatronData();render();
+}
+
+async function deleteTx(txId){
+  if(!confirm('Supprimer cette transaction ?'))return;
+  await sb.from('transactions').delete().eq('id',txId);
+  const {data:txs}=await sb.from('transactions').select('points').eq('client_id',state.selectedClient.id);
+  const newPts=Math.max(0,(txs||[]).reduce((s,t)=>s+(t.points||0),0));
+  await sb.from('clients').update({points:newPts}).eq('id',state.selectedClient.id);
+  showToast('🗑️ Transaction supprimée','#e87070');
+  await selectPatronClient(state.selectedClient);
 }
 async function deleteCaissier(id){
   await sb.from('caissiers').update({actif:false}).eq('id',id);

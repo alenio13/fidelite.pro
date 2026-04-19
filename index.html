@@ -297,6 +297,7 @@ function logout(){
 }
 function switchView(v){
   if(v==='cashier'&&state.role!=='caissier'){showToast('Accès réservé aux caissiers','#e87070');return;}
+  if(v==='client'&&state.role==='patron'){showToast('Utilisez l\'accès client depuis l\'écran de connexion','#e87070');return;}
   state.view=v;render();
 }
 async function loadClient(data){

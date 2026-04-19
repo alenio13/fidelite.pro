@@ -548,15 +548,15 @@ async function handlePay(){
     await sb.from('clients').update(updates).eq('id',state.client.id);
 
     // Transactions
-    for(const it of items){
-      await sb.from('transactions').insert({
-        client_id:state.client.id,
-        label:`${state.cart[it.id]}× ${it.name}`,
-        points:state.cart[it.id],
-        type:'earn',
-        caissier_nom:caissierNom
-      });
-    }
+    const label=items.map(it=>`${state.cart[it.id]}× ${it.name}`).join(' · ');
+const totalPtsEarned=items.reduce((s,it)=>s+state.cart[it.id],0);
+await sb.from('transactions').insert({
+  client_id:state.client.id,
+  label,
+  points:totalPtsEarned,
+  type:'earn',
+  caissier_nom:caissierNom
+});
 
     // Si récompenses → les déduire des compteurs
     for(const r of rewards){

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Carte Fidélité</title>
+<title>La craquante de lesigny</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
@@ -13,57 +13,73 @@ body{background:#0a0a0a;color:#f0ece4;font-family:'Helvetica Neue',sans-serif;mi
 .app{max-width:460px;margin:0 auto;padding:24px 16px 80px}
 .header{text-align:center;margin-bottom:20px}
 .header-sub{font-size:10px;letter-spacing:4px;color:#333;text-transform:uppercase;margin-bottom:4px}
-.header-title{font-size:24px;letter-spacing:2px;color:#e8e2d8}
+.header-title{font-size:22px;letter-spacing:1px;color:#e8e2d8}
 .badge{background:rgba(200,149,108,.15);color:#c8956c;border:1px solid rgba(200,149,108,.3);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;font-family:monospace}
 .badge-argent{background:rgba(176,190,197,.15);color:#b0bec5;border-color:rgba(176,190,197,.3)}
 .badge-or{background:rgba(249,208,86,.15);color:#f9d056;border-color:rgba(249,208,86,.3)}
 .badge-platine{background:rgba(224,224,255,.15);color:#e0e0ff;border-color:rgba(224,224,255,.3)}
-.pts-strip{background:#111;border:1px solid rgba(200,149,108,.1);border-radius:12px;padding:10px 18px;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center}
-.pts-val{font-size:16px;font-weight:700;color:#c8956c;font-family:monospace}
-.view-switch{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
-.view-btn{flex:1;min-width:80px;padding:10px 0;border-radius:14px;background:#0d0d0d;border:1px solid #141414;color:#2e2e2e;font-size:12px;cursor:pointer;transition:all .2s;text-align:center}
+.view-switch{display:flex;gap:6px;margin-bottom:20px}
+.view-btn{flex:1;padding:10px 0;border-radius:14px;background:#0d0d0d;border:1px solid #141414;color:#2e2e2e;font-size:12px;cursor:pointer;transition:all .2s;text-align:center}
 .view-btn div:last-child{font-size:9px;margin-top:2px;opacity:.6}
 .view-btn.active{background:#1a1a1a;color:#e0ddd8;border-color:#333}
 .view-btn.active-client{background:#1a1a1a;border-color:rgba(200,149,108,.4);color:#c8956c}
 .view-btn.active-patron{background:#1a1a1a;border-color:rgba(249,208,86,.4);color:#f9d056}
-.tabs{display:flex;gap:4px;background:#111;border-radius:14px;padding:5px;margin-bottom:24px;flex-wrap:wrap}
-.tab{flex:1;min-width:60px;padding:9px 4px;font-size:11px;font-weight:400;background:transparent;border:1px solid transparent;color:#555;border-radius:10px;cursor:pointer;transition:all .2s;text-align:center}
+.tabs{display:flex;gap:4px;background:#111;border-radius:14px;padding:5px;margin-bottom:20px;flex-wrap:wrap}
+.tab{flex:1;min-width:55px;padding:9px 4px;font-size:11px;background:transparent;border:1px solid transparent;color:#555;border-radius:10px;cursor:pointer;transition:all .2s;text-align:center}
 .tab.active{background:#1e1e1e;font-weight:700}
 .section-title{font-size:10px;letter-spacing:3px;color:#444;text-transform:uppercase;margin-bottom:10px}
-.product-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
-.product-btn{background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:12px 10px;cursor:pointer;text-align:left;transition:all .18s;position:relative}
-.product-btn.selected{background:#181818}
-.qty-badge{position:absolute;top:8px;right:8px;background:#c8956c;color:#0a0a0a;border-radius:50%;width:22px;height:22px;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
-.cart-bar{position:sticky;bottom:0;padding-top:12px}
-.cart-btn{width:100%;background:#c8956c;color:#0a0a0a;border:none;border-radius:14px;padding:15px 20px;font-size:15px;font-weight:800;cursor:pointer;display:flex;justify-content:space-between;align-items:center;box-shadow:0 -20px 40px #0a0a0a}
-.summary-box{background:#111;border:1px solid rgba(200,149,108,.2);border-radius:16px;padding:18px;margin-bottom:16px}
-.summary-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #161616;font-size:13px}
-.summary-row:last-child{border-bottom:none}
-.back-btn{background:none;border:none;color:#666;font-size:13px;cursor:pointer;margin-bottom:18px;padding:0}
-.pts-earned-box{background:#0d1a0d;border:1px solid #1a2e1a;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between}
-.use-pts-box{background:#0d0d0d;border:1px solid #1e1e1e;border-radius:14px;padding:16px;margin-bottom:14px}
-input[type=range]{width:100%;appearance:none;height:4px;border-radius:4px;background:#2a2a2a;outline:none;accent-color:#c8956c;cursor:pointer}
-.quick-btns{display:flex;gap:6px;margin-top:10px}
-.quick-btn{flex:1;background:#1a1a1a;border:1px solid #2a2a2a;color:#555;border-radius:8px;padding:6px 0;font-size:11px;cursor:pointer;transition:all .15s}
-.quick-btn.active{background:rgba(200,149,108,.15);border-color:#c8956c;color:#c8956c}
-.tx-list{display:flex;flex-direction:column;gap:7px}
-.tx-row{background:#111;border:1px solid #1c1c1c;border-radius:14px;padding:13px 18px;display:flex;justify-content:space-between;align-items:center}
-.pay-btn{width:100%;background:#c8956c;color:#0a0a0a;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;cursor:pointer}
-.done-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:14px}
-.empty{text-align:center;color:#252525;font-size:13px;padding:16px 0}
-.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;border-radius:30px;padding:12px 26px;font-size:14px;font-weight:600;box-shadow:0 8px 40px rgba(0,0,0,.6);z-index:999;white-space:nowrap;animation:toastIn .3s ease}
-@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-.login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:24px}
-.login-box{background:#111;border:1px solid #1e1e1e;border-radius:20px;padding:32px 28px;width:100%;max-width:380px}
 .input{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:12px;padding:13px 16px;color:#e0ddd8;font-size:14px;outline:none;width:100%;margin-bottom:12px}
 .input::placeholder{color:#333}
 .btn-primary{width:100%;background:#c8956c;color:#0a0a0a;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer}
-.client-found{background:#0d1a0d;border:1px solid #1a2e1a;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
-.card-visual{background:linear-gradient(135deg,#1a1410 0%,#0d0d0d 100%);border-radius:24px;padding:28px 28px 22px;position:relative;overflow:hidden;margin-bottom:18px}
-.progress-bar{height:4px;background:rgba(255,255,255,.05);border-radius:4px;overflow:hidden;margin:14px 0 6px}
+.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;border-radius:30px;padding:12px 26px;font-size:14px;font-weight:600;box-shadow:0 8px 40px rgba(0,0,0,.6);z-index:999;white-space:nowrap;animation:toastIn .3s ease}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+/* Produits */
+.cat-section{margin-bottom:20px}
+.product-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.product-btn{background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:12px 10px;cursor:pointer;text-align:left;transition:all .18s;position:relative;width:100%}
+.product-btn.selected{background:#181818;border-color:rgba(200,149,108,.5)}
+.qty-badge{position:absolute;top:8px;right:8px;background:#c8956c;color:#0a0a0a;border-radius:50%;width:22px;height:22px;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
+/* Colis */
+.colis-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.colis-btn{background:rgba(126,184,212,.08);border:1px solid rgba(126,184,212,.3);border-radius:14px;padding:16px 10px;cursor:pointer;text-align:center;transition:all .2s}
+.colis-btn:hover{background:rgba(126,184,212,.15)}
+/* Alerte récompense */
+.reward-alert{background:linear-gradient(135deg,#1a2e1a,#0d1a0d);border:2px solid #7ec87e;border-radius:16px;padding:18px;margin-bottom:16px;animation:pulse .8s ease-in-out}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(126,200,126,.4)}50%{box-shadow:0 0 0 8px rgba(126,200,126,0)}}
+/* Jauges points */
+.gauge-grid{display:flex;flex-direction:column;gap:10px}
+.gauge-row{background:#111;border:1px solid #1e1e1e;border-radius:12px;padding:12px 16px}
+.gauge-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.gauge-bar{height:8px;background:#1a1a1a;border-radius:8px;overflow:hidden}
+.gauge-fill{height:100%;border-radius:8px;transition:width .6s ease}
+/* Carte */
+.card-visual{background:linear-gradient(135deg,#1a1410 0%,#0d0d0d 100%);border-radius:24px;padding:24px 24px 20px;position:relative;overflow:hidden;margin-bottom:16px}
+.progress-bar{height:4px;background:rgba(255,255,255,.05);border-radius:4px;overflow:hidden;margin:12px 0 6px}
 .progress-fill{height:100%;border-radius:4px;transition:width 1s ease}
-.levels-box{background:#111;border:1px solid #1a1a1a;border-radius:16px;padding:16px 20px;width:100%}
-.qr-section{background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:20px;margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:12px}
+/* Client search */
+.client-found{background:#0d1a0d;border:1px solid #1a2e1a;border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+/* Summary */
+.summary-box{background:#111;border:1px solid rgba(200,149,108,.2);border-radius:16px;padding:16px;margin-bottom:14px}
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #161616;font-size:13px}
+.summary-row:last-child{border-bottom:none}
+.back-btn{background:none;border:none;color:#666;font-size:13px;cursor:pointer;margin-bottom:16px;padding:0}
+.cart-bar{position:sticky;bottom:0;padding-top:12px}
+.cart-btn{width:100%;background:#c8956c;color:#0a0a0a;border:none;border-radius:14px;padding:14px 20px;font-size:14px;font-weight:800;cursor:pointer;display:flex;justify-content:space-between;align-items:center;box-shadow:0 -20px 40px #0a0a0a}
+.pay-btn{width:100%;background:#c8956c;color:#0a0a0a;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;margin-top:4px}
+.done-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:14px}
+.empty{text-align:center;color:#252525;font-size:13px;padding:16px 0}
+/* Patron */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.stat-card{background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:16px;text-align:center}
+.stat-val{font-size:26px;font-weight:800;color:#c8956c;font-family:monospace}
+.stat-label{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:2px;margin-top:4px}
+.caissier-row{background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:13px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.del-btn{background:rgba(232,112,112,.1);border:1px solid rgba(232,112,112,.3);color:#e87070;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
+.client-row{background:#111;border:1px solid #1c1c1c;border-radius:14px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;cursor:pointer;transition:all .2s}
+.client-row:hover{background:#161616;border-color:rgba(200,149,108,.3)}
+.tx-row{background:#111;border:1px solid #1c1c1c;border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.tx-list{display:flex;flex-direction:column;gap:7px}
+.qr-section{background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:18px;margin-top:14px;display:flex;flex-direction:column;align-items:center;gap:10px}
 .qr-div{border-radius:12px;background:#fff;padding:10px;display:flex;align-items:center;justify-content:center}
 .scan-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
 .scan-box{position:relative;width:280px;height:280px;border-radius:20px;overflow:hidden}
@@ -75,18 +91,6 @@ input[type=range]{width:100%;appearance:none;height:4px;border-radius:4px;backgr
 .scan-line{position:absolute;width:100%;height:2px;background:linear-gradient(90deg,transparent,#c8956c,transparent);animation:scanAnim 2s linear infinite}
 @keyframes scanAnim{0%{top:10%}100%{top:90%}}
 .scan-close{background:#1a1a1a;border:1px solid #333;color:#ccc;border-radius:12px;padding:12px 28px;font-size:14px;cursor:pointer}
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
-.stat-card{background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:16px;text-align:center}
-.stat-val{font-size:28px;font-weight:800;color:#c8956c;font-family:monospace}
-.stat-label{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:2px;margin-top:4px}
-.caissier-row{background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.del-btn{background:rgba(232,112,112,.1);border:1px solid rgba(232,112,112,.3);color:#e87070;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
-.add-caissier-box{background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:18px;margin-bottom:16px}
-/* Client list */
-.client-row{background:#111;border:1px solid #1c1c1c;border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;cursor:pointer;transition:all .2s}
-.client-row:hover{background:#161616;border-color:rgba(200,149,108,.3)}
-.search-input{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:12px;padding:11px 16px;color:#e0ddd8;font-size:14px;outline:none;width:100%;margin-bottom:14px}
-.search-input::placeholder{color:#333}
 #barcode-input{position:fixed;opacity:0;pointer-events:none;top:-999px}
 </style>
 </head>
@@ -94,54 +98,54 @@ input[type=range]{width:100%;appearance:none;height:4px;border-radius:4px;backgr
 <div id="root"></div>
 <input id="barcode-input" type="text" autocomplete="off">
 <script>
-const SUPABASE_URL = 'https://tgrqfrijwjonrehixgre.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Dk_GsamMzY1KRRIELRxngQ_xsH1Xxkr';
+const SUPABASE_URL = 'METTEZ_VOTRE_URL_ICI';
+const SUPABASE_KEY = 'METTEZ_VOTRE_CLE_ICI';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const CATALOG=[
-  {id:1,name:"Expresso",price:2.50,pts:5,icon:"☕",cat:"Boissons"},
-  {id:2,name:"Cappuccino",price:3.80,pts:8,icon:"🥛",cat:"Boissons"},
-  {id:3,name:"Jus d'orange",price:4.20,pts:9,icon:"🍊",cat:"Boissons"},
-  {id:4,name:"Croissant",price:1.80,pts:4,icon:"🥐",cat:"Snacks"},
-  {id:5,name:"Sandwich",price:6.50,pts:13,icon:"🥪",cat:"Snacks"},
-  {id:6,name:"Salade",price:9.00,pts:18,icon:"🥗",cat:"Plats"},
-  {id:7,name:"Burger",price:12.00,pts:24,icon:"🍔",cat:"Plats"},
-  {id:8,name:"Pizza",price:13.50,pts:27,icon:"🍕",cat:"Plats"},
-  {id:9,name:"Tiramisu",price:5.50,pts:11,icon:"🍰",cat:"Desserts"},
-  {id:10,name:"Glace",price:3.50,pts:7,icon:"🍦",cat:"Desserts"},
-];
-const REWARDS=[
-  {id:1,name:"Café offert",pts:50,icon:"☕",color:"#c8a97e"},
-  {id:2,name:"Dessert offert",pts:120,icon:"🍰",color:"#e8a598"},
-  {id:3,name:"Réduction 10%",pts:200,icon:"🏷️",color:"#8fc98a"},
-  {id:4,name:"Menu gratuit",pts:400,icon:"🍽️",color:"#7eb8d4"},
-  {id:5,name:"Week-end spa",pts:1000,icon:"✨",color:"#b59bd4"},
-];
-const LEVELS=[
-  {name:"Bronze",min:0,max:499,color:"#c8956c"},
-  {name:"Argent",min:500,max:999,color:"#b0bec5"},
-  {name:"Or",min:1000,max:1999,color:"#f9d056"},
-  {name:"Platine",min:2000,max:Infinity,color:"#e0e0ff"},
-];
-const PT_VAL=0.01;
-const CATS=[...new Set(CATALOG.map(p=>p.cat))];
-const PATRON_PWD="patron2024"; // ← Changez !
+const SHOP_NAME = "La craquante de lesigny";
+const PATRON_PWD = "patron2024"; // ← Changez !
 
-function getLevel(p){return LEVELS.find(l=>p>=l.min&&p<=l.max)||LEVELS[0]}
-function getBadgeClass(pts){const n=getLevel(pts).name;return n==='Argent'?'badge badge-argent':n==='Or'?'badge badge-or':n==='Platine'?'badge badge-platine':'badge'}
+// ── PRODUITS ──────────────────────────────────────────────────────────────────
+// cat = clé du compteur de points
+const PRODUCTS = [
+  {id:1, name:"Baguette",          icon:"🥖",   price:1.20, cat:"baguette",  color:"#c8a97e"},
+  {id:2, name:"Baguette tradition", icon:"🥖🥖", price:1.50, cat:"tradition", color:"#e8c87e"},
+  {id:3, name:"Croissant",         icon:"🥐",   price:1.30, cat:"croissant", color:"#e8a598"},
+  {id:4, name:"Chocolat",          icon:"🍫",   price:1.30, cat:"chocolat",  color:"#a0785a"},
+  {id:5, name:"Café",              icon:"☕",   price:1.50, cat:"cafe",      color:"#8b6914"},
+];
 
-let state={
-  view:'login',role:null,
+// ── RÈGLES FIDÉLITÉ ───────────────────────────────────────────────────────────
+const LOYALTY = {
+  baguette:  {label:"Baguette",           icon:"🥖",   seuil:10, col:"pts_baguette",  reward:"1 baguette offerte 🥖"},
+  tradition: {label:"Baguette tradition", icon:"🥖🥖", seuil:10, col:"pts_tradition", reward:"1 tradition offerte 🥖🥖"},
+  croissant: {label:"Croissant",          icon:"🥐",   seuil:15, col:"pts_croissant", reward:"1 croissant offert 🥐"},
+  chocolat:  {label:"Chocolat",           icon:"🍫",   seuil:15, col:"pts_chocolat",  reward:"1 chocolat offert 🍫"},
+  cafe:      {label:"Café",               icon:"☕",   seuil:10, col:"pts_cafe",       reward:"1 café offert ☕"},
+};
+
+const CATS_ORDER = ["baguette","tradition","croissant","chocolat","cafe"];
+
+function getLoyaltyCol(cat){ return LOYALTY[cat]?.col || null; }
+function getLevel(p){ return ([{name:"Bronze",min:0,max:499,color:"#c8956c"},{name:"Argent",min:500,max:999,color:"#b0bec5"},{name:"Or",min:1000,max:1999,color:"#f9d056"},{name:"Platine",min:2000,max:Infinity,color:"#e0e0ff"}]).find(l=>p>=l.min&&p<=l.max)||{name:"Bronze",min:0,max:499,color:"#c8956c"} }
+function getBadgeClass(pts){ const n=getLevel(pts).name; return n==='Argent'?'badge badge-argent':n==='Or'?'badge badge-or':n==='Platine'?'badge badge-platine':'badge' }
+function today(){ return new Date().toISOString().split('T')[0] }
+
+// ── ÉTAT ──────────────────────────────────────────────────────────────────────
+let state = {
+  view:'login', role:null,
   caissierActif:null,
-  client:null,transactions:[],
-  cart:{},usePoints:0,step:'catalog',
+  client:null, transactions:[],
+  cart:{},        // {productId: qty}
+  colisToday:false, // colis déjà fait aujourd'hui
+  pendingRewards:[], // [{cat, label, icon}] alertes à afficher
+  step:'catalog',
   clientTab:'card',
   patronTab:'stats',
-  selectedClient:null, // client sélectionné dans la liste patron
-  selectedClientTx:[], // transactions du client sélectionné
-  clientSearch:'',     // recherche dans la liste
-  scanning:false,toast:null,
-  caissiers:[],allTransactions:[],allClients:[],
+  selectedClient:null, selectedClientTx:[],
+  clientSearch:'',
+  scanning:false, toast:null,
+  caissiers:[], allTransactions:[], allClients:[],
 };
 
 // ── SCANNER ───────────────────────────────────────────────────────────────────
@@ -179,7 +183,7 @@ function stopScan(){
 async function handleQRScan(qrData){
   const clientId=qrData.replace('FL-','');
   const {data}=await sb.from('clients').select('*').eq('id',clientId).single();
-  if(data){state.client=data;await loadTransactions(data.id);showToast(`✅ ${data.nom} identifié !`,'#8fc98a');render();}
+  if(data){await loadClient(data);showToast(`✅ ${data.nom} identifié !`,'#8fc98a');render();}
   else showToast('QR code non reconnu','#e87070');
 }
 let barcodeBuffer='',barcodeTimer=null;
@@ -190,7 +194,6 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'){if(barcodeBuffer.startsWith('FL-'))handleQRScan(barcodeBuffer);barcodeBuffer='';}
   else if(e.key.length===1){barcodeBuffer+=e.key;clearTimeout(barcodeTimer);barcodeTimer=setTimeout(()=>{barcodeBuffer='';},200);}
 });
-
 function generateQR(clientId){
   setTimeout(()=>{
     const div=document.getElementById('qr-div-'+clientId);
@@ -207,69 +210,62 @@ function render(){
   root.innerHTML=`
     ${state.toast?`<div class="toast" style="border:1px solid ${state.toast.color}77;color:${state.toast.color}">${state.toast.msg}</div>`:''}
     <div class="app">
-      <div class="header"><div class="header-sub">programme</div><div class="header-title">La craquante de lesigny</div></div>
+      <div class="header"><div class="header-sub">boulangerie · programme fidélité</div><div class="header-title">${SHOP_NAME}</div></div>
       <div class="view-switch">
-        ${state.role==='patron'?`<button class="view-btn active-patron">
-          <div>👑 Patron</div><div>Tableau de bord</div>
-        </button>`:`
-        <button class="view-btn ${state.view==='cashier'?'active':''}" onclick="switchView('cashier')">
-          <div>🏪 Caisse</div><div>${state.caissierActif?state.caissierActif.nom:'Caissier'}</div>
-        </button>`}
-        <button class="view-btn ${state.view==='client'?'active active-client':''}" onclick="switchView('client')">
-          <div>👤 Client</div><div>Carte fidélité</div>
-        </button>
-        <button class="view-btn" onclick="logout()" style="color:#444;max-width:60px">
-          <div>⏏️</div><div>Quitter</div>
-        </button>
+        ${state.role==='patron'?`<button class="view-btn active-patron"><div>👑 Patron</div><div>Tableau de bord</div></button>`:`
+        <button class="view-btn ${state.view==='cashier'?'active':''}" onclick="switchView('cashier')"><div>🏪 Caisse</div><div>${state.caissierActif?state.caissierActif.nom:'Caissier'}</div></button>`}
+        <button class="view-btn ${state.view==='client'?'active active-client':''}" onclick="switchView('client')"><div>👤 Client</div><div>Ma carte</div></button>
+        <button class="view-btn" onclick="logout()" style="color:#444;max-width:55px"><div>⏏️</div><div>Quitter</div></button>
       </div>
-      ${state.client&&state.view!=='patron'?`
-        <div class="pts-strip">
-          <div style="display:flex;gap:10px;align-items:center">
-            <span class="${getBadgeClass(state.client.points)}">${getLevel(state.client.points).name}</span>
-            <span style="font-size:13px;color:#666">${state.client.nom}</span>
-          </div>
-          <span class="pts-val">${state.client.points.toLocaleString()} pts</span>
-        </div>`:''}
+      ${state.client&&state.view!=='patron'?renderClientStrip():''}
       ${state.role==='patron'?renderPatron():state.view==='cashier'?renderCashier():renderClient()}
     </div>`;
   if(state.view==='client'&&state.clientTab==='card'&&state.client)generateQR(state.client.id);
+}
+
+function renderClientStrip(){
+  const c=state.client;
+  return`<div style="background:#111;border:1px solid rgba(200,149,108,.15);border-radius:12px;padding:10px 14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="${getBadgeClass(c.points)}">${getLevel(c.points).name}</span>
+      <span style="font-size:13px;color:#777">${c.nom}</span>
+    </div>
+    <span style="font-size:15px;font-weight:700;color:#c8956c;font-family:monospace">${c.points} pts</span>
+  </div>`;
 }
 
 function renderScanner(){return`
   <canvas id="scan-canvas" style="display:none"></canvas>
   <div class="scan-overlay">
     <div style="font-size:13px;color:#888;letter-spacing:2px;text-transform:uppercase">Scanner la carte client</div>
-    <div class="scan-box">
-      <video id="scan-video" playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
-      <div class="scan-corners"></div><div class="scan-line"></div>
-    </div>
-    <div style="font-size:13px;color:#666;text-align:center;max-width:260px">Pointez la caméra vers le QR code du client</div>
+    <div class="scan-box"><video id="scan-video" playsinline muted></video><div class="scan-corners"></div><div class="scan-line"></div></div>
+    <div style="font-size:13px;color:#666;text-align:center;max-width:260px">Pointez la caméra vers le QR code</div>
     <button class="scan-close" onclick="stopScan()">✕ Annuler</button>
   </div>`;}
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
 function renderLogin(){return`
-  <div class="login-screen">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:24px">
     <div style="text-align:center">
-      <div class="header-sub">programme</div>
-      <div class="header-title" style="font-size:28px">La craquante de lesigny</div>
+      <div class="header-sub">boulangerie · programme fidélité</div>
+      <div class="header-title" style="font-size:22px">${SHOP_NAME}</div>
     </div>
-    <div class="login-box">
-      <div style="font-size:22px;font-weight:700;margin-bottom:20px;text-align:center">Connexion</div>
-      <div style="background:#0d0d0d;border:1px solid rgba(249,208,86,.2);border-radius:14px;padding:16px;margin-bottom:14px">
-        <div style="font-size:12px;color:#f9d056;font-weight:700;margin-bottom:10px">👑 Accès Patron</div>
+    <div style="background:#111;border:1px solid #1e1e1e;border-radius:20px;padding:28px 24px;width:100%;max-width:380px">
+      <div style="font-size:20px;font-weight:700;margin-bottom:18px;text-align:center">Connexion</div>
+      <div style="background:#0d0d0d;border:1px solid rgba(249,208,86,.2);border-radius:14px;padding:14px;margin-bottom:12px">
+        <div style="font-size:12px;color:#f9d056;font-weight:700;margin-bottom:10px">👑 Patron</div>
         <input class="input" type="password" id="patron-pwd" placeholder="Mot de passe patron" onkeydown="if(event.key==='Enter')loginPatron()">
-        <button onclick="loginPatron()" style="width:100%;background:rgba(249,208,86,.15);border:1px solid rgba(249,208,86,.3);color:#f9d056;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">Se connecter</button>
+        <button onclick="loginPatron()" style="width:100%;background:rgba(249,208,86,.15);border:1px solid rgba(249,208,86,.3);color:#f9d056;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">Connexion</button>
       </div>
-      <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:14px;padding:16px;margin-bottom:14px">
-        <div style="font-size:12px;color:#c8956c;font-weight:700;margin-bottom:10px">🏪 Accès Caissier</div>
+      <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:14px;padding:14px;margin-bottom:12px">
+        <div style="font-size:12px;color:#c8956c;font-weight:700;margin-bottom:10px">🏪 Caissier</div>
         <input class="input" type="text" id="caissier-code" placeholder="Votre code caissier" onkeydown="if(event.key==='Enter')loginCaissier()">
-        <button onclick="loginCaissier()" class="btn-primary">Se connecter</button>
+        <button onclick="loginCaissier()" class="btn-primary">Connexion</button>
       </div>
-      <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:14px;padding:16px">
-        <div style="font-size:12px;color:#888;font-weight:700;margin-bottom:10px">👤 Accès Client</div>
-        <input class="input" type="tel" id="tel-input" placeholder="Votre numéro de téléphone" onkeydown="if(event.key==='Enter')loginClient()">
-        <input class="input" type="password" id="pin-input" placeholder="Votre code PIN à 4 chiffres" maxlength="4" onkeydown="if(event.key==='Enter')loginClient()">
+      <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:14px;padding:14px">
+        <div style="font-size:12px;color:#888;font-weight:700;margin-bottom:10px">👤 Client</div>
+        <input class="input" type="tel" id="tel-input" placeholder="Numéro de téléphone" onkeydown="if(event.key==='Enter')loginClient()">
+        <input class="input" type="password" id="pin-input" placeholder="Code PIN à 4 chiffres" maxlength="4" onkeydown="if(event.key==='Enter')loginClient()">
         <button onclick="loginClient()" style="width:100%;background:#1a1a1a;border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">Voir ma carte</button>
       </div>
     </div>
@@ -285,276 +281,88 @@ async function loginCaissier(){
   if(!code)return;
   const {data}=await sb.from('caissiers').select('*').eq('code',code).eq('actif',true).single();
   if(data){state.role='caissier';state.caissierActif=data;state.view='cashier';render();}
-  else showToast('Code caissier invalide ou désactivé','#e87070');
+  else showToast('Code invalide ou désactivé','#e87070');
 }
 async function loginClient(){
   const tel=document.getElementById('tel-input').value.trim();
   const pin=document.getElementById('pin-input').value.trim();
-  if(!tel||!pin)return showToast('Entrez votre numéro et PIN','#e87070');
+  if(!tel||!pin)return showToast('Entrez numéro et PIN','#e87070');
   const {data}=await sb.from('clients').select('*').eq('telephone',tel).eq('pin',pin).single();
-  if(data){state.client=data;state.role='client';state.view='client';await loadTransactions(data.id);render();}
+  if(data){state.role='client';state.view='client';await loadClient(data);render();}
   else showToast('Numéro ou PIN incorrect','#e87070');
 }
 function logout(){
-  state.view='login';state.role=null;state.caissierActif=null;
-  state.client=null;state.transactions=[];state.cart={};
-  state.usePoints=0;state.step='catalog';state.selectedClient=null;render();
+  Object.assign(state,{view:'login',role:null,caissierActif:null,client:null,transactions:[],cart:{},colisToday:false,pendingRewards:[],step:'catalog',selectedClient:null,clientTab:'card'});
+  render();
 }
 function switchView(v){
   if(v==='cashier'&&state.role!=='caissier'){showToast('Accès réservé aux caissiers','#e87070');return;}
   state.view=v;render();
 }
-
-// ── PATRON ────────────────────────────────────────────────────────────────────
-async function loadPatronData(){
-  const [{data:c},{data:t},{data:cl}]=await Promise.all([
-    sb.from('caissiers').select('*').order('created_at',{ascending:false}),
-    sb.from('transactions').select('*').order('created_at',{ascending:false}).limit(100),
-    sb.from('clients').select('*').order('created_at',{ascending:false}),
-  ]);
-  state.caissiers=c||[];state.allTransactions=t||[];state.allClients=cl||[];
-}
-
-async function selectClient(client){
-  state.selectedClient=client;
-  const {data}=await sb.from('transactions').select('*').eq('client_id',client.id).order('created_at',{ascending:false}).limit(30);
-  state.selectedClientTx=data||[];
-  render();
-}
-
-function renderPatron(){
-  // Si un client est sélectionné → afficher son détail
-  if(state.selectedClient) return renderPatronClientDetail();
-
-  const PTABS=[
-    {id:'stats',l:'📊 Stats'},
-    {id:'clients',l:'👥 Clients'},
-    {id:'caissiers',l:'🏪 Caissiers'},
-    {id:'activite',l:'📋 Activité'},
-  ];
-
-  const txEarn=state.allTransactions.filter(t=>t.type==='earn');
-  const totalPts=txEarn.reduce((s,t)=>s+(t.points||0),0);
-
-  // Stats par caissier
-  const statsCaissier={};
-  state.allTransactions.forEach(t=>{
-    if(t.type==='earn'&&t.caissier_nom){
-      if(!statsCaissier[t.caissier_nom])statsCaissier[t.caissier_nom]={tx:0,pts:0};
-      statsCaissier[t.caissier_nom].tx++;
-      statsCaissier[t.caissier_nom].pts+=t.points||0;
-    }
-  });
-
-  // Filtrage clients
-  const filtered=state.allClients.filter(c=>
-    c.nom.toLowerCase().includes(state.clientSearch.toLowerCase())||
-    c.telephone.includes(state.clientSearch)
-  );
-
-  return`
-    <div class="tabs">
-      ${PTABS.map(t=>`<button class="tab ${state.patronTab===t.id?'active':''}" style="${state.patronTab===t.id?'color:#f9d056;border-color:rgba(249,208,86,.3)':''}" onclick="state.patronTab='${t.id}';render()">${t.l}</button>`).join('')}
-    </div>
-
-    ${state.patronTab==='stats'?`
-      <div class="stat-grid">
-        <div class="stat-card"><div class="stat-val">${state.allClients.length}</div><div class="stat-label">Clients</div></div>
-        <div class="stat-card"><div class="stat-val">${state.caissiers.filter(c=>c.actif).length}</div><div class="stat-label">Caissiers actifs</div></div>
-        <div class="stat-card"><div class="stat-val">${totalPts.toLocaleString()}</div><div class="stat-label">Points distribués</div></div>
-        <div class="stat-card"><div class="stat-val">${txEarn.length}</div><div class="stat-label">Transactions</div></div>
-      </div>
-      <div class="section-title">Performance par caissier</div>
-      ${Object.keys(statsCaissier).length===0?`<div class="empty">Aucune activité enregistrée</div>`:''}
-      ${Object.entries(statsCaissier).map(([nom,s])=>`
-        <div class="caissier-row">
-          <div>
-            <div style="font-size:14px;color:#ddd;font-weight:600">${nom}</div>
-            <div style="font-size:12px;color:#555;margin-top:2px">${s.tx} transaction${s.tx>1?'s':''}</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-size:14px;color:#c8956c;font-weight:700">+${s.pts} pts</div>
-          </div>
-        </div>`).join('')}`:''}
-
-    ${state.patronTab==='clients'?`
-      <input class="search-input" type="text" placeholder="🔍 Rechercher par nom ou téléphone..." oninput="state.clientSearch=this.value;render()" value="${state.clientSearch}">
-      <div style="font-size:12px;color:#555;margin-bottom:12px">${filtered.length} client${filtered.length>1?'s':''}</div>
-      ${filtered.length===0?`<div class="empty">Aucun client trouvé</div>`:''}
-      ${filtered.map(c=>{
-        const level=getLevel(c.points);
-        return`<div class="client-row" onclick="selectClient(${JSON.stringify(c).replace(/"/g,'&quot;')})">
-          <div>
-            <div style="font-size:14px;color:#ddd;font-weight:600">${c.nom}</div>
-            <div style="font-size:12px;color:#555;margin-top:2px">${c.telephone} · inscrit le ${new Date(c.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div>
-          </div>
-          <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-            <span class="${getBadgeClass(c.points)}">${level.name}</span>
-            <span style="font-size:13px;font-weight:700;color:${level.color};font-family:monospace">${c.points.toLocaleString()} pts</span>
-          </div>
-        </div>`;
-      }).join('')}`:''}
-
-    ${state.patronTab==='caissiers'?`
-      <div class="add-caissier-box">
-        <div class="section-title">Créer un compte caissier</div>
-        <input class="input" type="text" id="new-caissier-nom" placeholder="Prénom et nom du caissier">
-        <input class="input" type="text" id="new-caissier-code" placeholder="Code d'accès (ex: MARC01)">
-        <button onclick="createCaissier()" class="btn-primary">Créer le compte</button>
-      </div>
-      <div class="section-title">Caissiers actifs</div>
-      ${state.caissiers.filter(c=>c.actif).map(c=>`
-        <div class="caissier-row">
-          <div>
-            <div style="font-size:14px;color:#ddd;font-weight:600">${c.nom}</div>
-            <div style="font-size:12px;color:#555;margin-top:2px">Code : <span style="color:#c8956c;font-family:monospace">${c.code}</span></div>
-          </div>
-          <button class="del-btn" onclick="deleteCaissier('${c.id}')">Désactiver</button>
-        </div>`).join('')}
-      ${state.caissiers.filter(c=>c.actif).length===0?`<div class="empty">Aucun caissier actif</div>`:''}`:''}
-
-    ${state.patronTab==='activite'?`
-      <div class="section-title">Dernières transactions</div>
-      <div class="tx-list">
-        ${state.allTransactions.slice(0,50).map(tx=>`
-          <div class="tx-row">
-            <div>
-              <div style="font-size:13px;color:#ddd;margin-bottom:2px">${tx.label}</div>
-              <div style="font-size:11px;color:#444;display:flex;gap:8px">
-                <span>${new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
-                ${tx.caissier_nom?`<span style="color:#666">· ${tx.caissier_nom}</span>`:''}
-              </div>
-            </div>
-            <div style="font-family:monospace;font-weight:700;font-size:14px;color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pts</div>
-          </div>`).join('')}
-        ${state.allTransactions.length===0?`<div class="empty">Aucune activité</div>`:''}
-      </div>`:''}`;
-}
-
-function renderPatronClientDetail(){
-  const c=state.selectedClient;
-  const level=getLevel(c.points);
-  const next=LEVELS[LEVELS.indexOf(level)+1];
-  const prog=next?Math.min(100,((c.points-level.min)/(next.min-level.min))*100):100;
-  const totalDepense=state.selectedClientTx.filter(t=>t.type==='earn').reduce((s,t)=>{
-    const prod=CATALOG.find(p=>t.label.includes(p.name));
-    return s+(prod?prod.price:0);
-  },0);
-
-  return`
-    <button class="back-btn" onclick="state.selectedClient=null;render()">← Retour à la liste</button>
-
-    <!-- Carte résumé -->
-    <div style="background:#111;border:1px solid ${level.color}33;border-radius:16px;padding:18px;margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-        <div>
-          <div style="font-size:18px;font-weight:700;color:#ddd">${c.nom}</div>
-          <div style="font-size:13px;color:#555;margin-top:3px">${c.telephone}</div>
-          <div style="font-size:11px;color:#444;margin-top:2px">Client depuis le ${new Date(c.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</div>
-        </div>
-        <span class="${getBadgeClass(c.points)}">${level.name}</span>
-      </div>
-
-      <!-- Stats client -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
-        <div style="background:#0d0d0d;border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:20px;font-weight:800;color:${level.color}">${c.points.toLocaleString()}</div>
-          <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-top:2px">Points</div>
-        </div>
-        <div style="background:#0d0d0d;border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:20px;font-weight:800;color:#7ec87e">${state.selectedClientTx.filter(t=>t.type==='earn').length}</div>
-          <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-top:2px">Visites</div>
-        </div>
-        <div style="background:#0d0d0d;border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:20px;font-weight:800;color:#7eb8d4">${totalDepense.toFixed(0)}€</div>
-          <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-top:2px">Dépensé</div>
-        </div>
-      </div>
-
-      <!-- Progression niveau -->
-      <div style="font-size:11px;color:#555;margin-bottom:6px;display:flex;justify-content:space-between">
-        <span>${level.name}</span>
-        ${next?`<span>${next.min-c.points} pts avant ${next.name}</span>`:'<span>Niveau maximum ✨</span>'}
-      </div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${prog}%;background:linear-gradient(90deg,${level.color}66,${level.color})"></div></div>
-    </div>
-
-    <!-- Historique -->
-    <div class="section-title">Historique (30 dernières transactions)</div>
-    <div class="tx-list">
-      ${state.selectedClientTx.length===0?`<div class="empty">Aucune transaction</div>`:''}
-      ${state.selectedClientTx.map(tx=>`
-        <div class="tx-row">
-          <div>
-            <div style="font-size:13px;color:#ddd;margin-bottom:2px">${tx.label}</div>
-            <div style="font-size:11px;color:#444;display:flex;gap:8px">
-              <span>${new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
-              ${tx.caissier_nom?`<span style="color:#666">· ${tx.caissier_nom}</span>`:''}
-            </div>
-          </div>
-          <div style="font-family:monospace;font-weight:700;font-size:14px;color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pts</div>
-        </div>`).join('')}
-    </div>`;
-}
-
-async function createCaissier(){
-  const nom=document.getElementById('new-caissier-nom')?.value?.trim();
-  const code=document.getElementById('new-caissier-code')?.value?.trim().toUpperCase();
-  if(!nom||!code)return showToast('Remplissez nom et code','#e87070');
-  const {error}=await sb.from('caissiers').insert({nom,code,actif:true});
-  if(error)return showToast('Code déjà utilisé','#e87070');
-  showToast(`✅ ${nom} créé !`,'#8fc98a');
-  await loadPatronData();render();
-}
-async function deleteCaissier(id){
-  await sb.from('caissiers').update({actif:false}).eq('id',id);
-  showToast('Caissier désactivé','#8fc98a');
-  await loadPatronData();render();
+async function loadClient(data){
+  state.client=data;
+  state.colisToday=(data.last_colis===today());
+  await loadTransactions(data.id);
 }
 
 // ── CAISSE ────────────────────────────────────────────────────────────────────
 function renderCashier(){
   if(state.step==='done')return`
-    <div class="done-screen">
-      <div style="font-size:56px">✅</div>
-      <div style="font-size:20px;font-weight:700;color:#8fc98a">Paiement validé !</div>
-      <div style="font-size:13px;color:#555">Points mis à jour</div>
-    </div>`;
-  const items=CATALOG.filter(p=>(state.cart[p.id]||0)>0);
+    <div class="done-screen"><div style="font-size:56px">✅</div>
+    <div style="font-size:20px;font-weight:700;color:#8fc98a">Paiement validé !</div>
+    <div style="font-size:13px;color:#555">Points mis à jour</div></div>`;
+
+  const items=PRODUCTS.filter(p=>(state.cart[p.id]||0)>0);
   const total=items.reduce((s,p)=>s+p.price*state.cart[p.id],0);
-  const earned=items.reduce((s,p)=>s+p.pts*state.cart[p.id],0);
-  const maxUse=state.client?Math.min(state.client.points,Math.floor(total/PT_VAL)):0;
-  const discount=state.usePoints*PT_VAL;
-  const finalTotal=Math.max(0,total-discount);
   const cartCount=Object.values(state.cart).reduce((s,v)=>s+v,0);
-  if(state.step==='summary')return renderSummary(items,total,earned,maxUse,discount,finalTotal);
+
+  if(state.step==='summary')return renderSummary(items,total);
+
   return`
-    ${state.caissierActif?`<div style="background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:#555">🏪 Caissier : <span style="color:#c8956c">${state.caissierActif.nom}</span></div>`:''}
+    ${state.caissierActif?`<div style="background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:#555">🏪 <span style="color:#c8956c">${state.caissierActif.nom}</span></div>`:''}
     ${renderClientSearch()}
-    ${CATS.map(cat=>`
-      <div class="section-title">${cat}</div>
-      <div class="product-grid">
-        ${CATALOG.filter(p=>p.cat===cat).map(p=>{
-          const qty=state.cart[p.id]||0;
-          return`<button class="product-btn ${qty>0?'selected':''}" onclick="addToCart(${p.id})" style="${qty>0?'border-color:rgba(200,149,108,.4)':''}">
-            <div style="font-size:24px;margin-bottom:5px">${p.icon}</div>
-            <div style="font-size:13px;color:#e0ddd8;font-weight:500;margin-bottom:4px">${p.name}</div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:12px;color:#777">${p.price.toFixed(2)} €</span>
-              <span class="badge">+${p.pts}</span>
-            </div>
-            ${qty>0?`<div class="qty-badge">${qty}</div>`:''}
-          </button>`;
-        }).join('')}
-      </div>`).join('')}
+
+    <!-- Produits -->
+    <div class="section-title">Produits</div>
+    <div class="product-grid" style="margin-bottom:18px">
+      ${PRODUCTS.map(p=>{
+        const qty=state.cart[p.id]||0;
+        const rule=LOYALTY[p.cat];
+        return`<button class="product-btn ${qty>0?'selected':''}" onclick="addToCart(${p.id})">
+          <div style="font-size:22px;margin-bottom:4px">${p.icon}</div>
+          <div style="font-size:13px;color:#e0ddd8;font-weight:500;margin-bottom:6px">${p.name}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:#777">${p.price.toFixed(2)} €</span>
+            <span style="background:${p.color}22;color:${p.color};border:1px solid ${p.color}44;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700">+1 ${rule.icon}</span>
+          </div>
+          ${qty>0?`<div class="qty-badge">${qty}</div>`:''}
+        </button>`;
+      }).join('')}
+    </div>
+
+    <!-- Colis -->
+    <div class="section-title">Colis</div>
+    <div class="colis-btns">
+      <button class="colis-btn ${state.colisToday?'opacity-50':''}" onclick="addColis('déposé')" ${state.colisToday?'disabled':''} style="${state.colisToday?'opacity:.4;cursor:not-allowed':''}">
+        <div style="font-size:24px;margin-bottom:6px">📦</div>
+        <div style="font-size:13px;color:#7eb8d4;font-weight:600">Colis déposé</div>
+        <div style="font-size:11px;color:#444;margin-top:3px">${state.colisToday?'Déjà fait aujourd\'hui':'+ 1 point bonus si achat'}</div>
+      </button>
+      <button class="colis-btn ${state.colisToday?'opacity-50':''}" onclick="addColis('récupéré')" ${state.colisToday?'disabled':''} style="${state.colisToday?'opacity:.4;cursor:not-allowed':''}">
+        <div style="font-size:24px;margin-bottom:6px">📬</div>
+        <div style="font-size:13px;color:#7eb8d4;font-weight:600">Colis récupéré</div>
+        <div style="font-size:11px;color:#444;margin-top:3px">${state.colisToday?'Déjà fait aujourd\'hui':'+ 1 point bonus si achat'}</div>
+      </button>
+    </div>
+
     ${cartCount>0?`
       <div class="cart-bar">
-        <button class="cart-btn" onclick="goToSummary()">
+        <button class="cart-btn" onclick="state.step='summary';render()">
           <span style="background:rgba(0,0,0,.15);border-radius:20px;padding:3px 10px;font-size:13px">${cartCount} article${cartCount>1?'s':''}</span>
           <span>Récapitulatif →</span>
           <span>${total.toFixed(2)} €</span>
         </button>
-      </div>`:`<div class="empty">Appuyez sur un article pour l'ajouter ↑</div>`}`;
+      </div>`:`<div class="empty">Ajoutez un article ↑</div>`}`;
 }
 
 function renderClientSearch(){
@@ -562,7 +370,7 @@ function renderClientSearch(){
     <div class="client-found">
       <div>
         <div style="font-size:13px;color:#7ec87e;font-weight:600">✓ ${state.client.nom}</div>
-        <div style="font-size:12px;color:#555;margin-top:2px">${state.client.telephone} · ${state.client.points} pts</div>
+        <div style="font-size:12px;color:#555;margin-top:2px">${state.client.telephone}</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <button onclick="showChangePIN()" style="background:none;border:none;color:#c8956c;font-size:12px;cursor:pointer">PIN</button>
@@ -574,10 +382,10 @@ function renderClientSearch(){
       <button onclick="updatePIN()" class="btn-primary" style="margin-top:0">Enregistrer</button>
     </div>`;
   return`
-    <div style="background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:16px 18px;margin-bottom:16px">
+    <div style="background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:14px 16px;margin-bottom:16px">
       <div class="section-title" style="margin-bottom:10px">Identifier le client</div>
-      <button onclick="startScan()" style="width:100%;background:rgba(200,149,108,.1);border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:12px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px">
-        <span style="font-size:20px">📷</span> Scanner le QR code
+      <button onclick="startScan()" style="width:100%;background:rgba(200,149,108,.1);border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px">
+        <span>📷</span> Scanner le QR code
       </button>
       <div style="text-align:center;font-size:11px;color:#333;margin-bottom:10px">— ou rechercher manuellement —</div>
       <input class="input" type="tel" id="search-tel" placeholder="Numéro de téléphone" style="margin-bottom:8px" onkeydown="if(event.key==='Enter')searchClient()">
@@ -594,19 +402,50 @@ function renderClientSearch(){
     </div>`;
 }
 
-function renderSummary(items,total,earned,maxUse,discount,finalTotal){
-  const rewardsAvail=state.client?REWARDS.filter(r=>r.pts<=state.client.points):[];
+function renderSummary(items, total){
+  // Calculer les nouveaux compteurs après achat
+  const newCounts={};
+  CATS_ORDER.forEach(cat=>{
+    newCounts[cat]=(state.client?state.client['pts_'+cat]:0)||0;
+  });
+  items.forEach(it=>{
+    const qty=state.cart[it.id]||0;
+    newCounts[it.cat]=(newCounts[it.cat]||0)+qty;
+  });
+
+  // Récompenses débloquées
+  const rewards=[];
+  CATS_ORDER.forEach(cat=>{
+    const rule=LOYALTY[cat];
+    const before=(state.client?state.client['pts_'+cat]:0)||0;
+    const after=newCounts[cat];
+    const beforeRewards=Math.floor(before/rule.seuil);
+    const afterRewards=Math.floor(after/rule.seuil);
+    if(afterRewards>beforeRewards){
+      rewards.push({cat,label:rule.reward,icon:rule.icon,count:afterRewards-beforeRewards});
+    }
+  });
+
   return`
     <button class="back-btn" onclick="state.step='catalog';render()">← Modifier la commande</button>
     <div class="section-title">Récapitulatif</div>
-    <div class="summary-box" style="margin-bottom:16px">
+
+    <!-- Alertes récompenses -->
+    ${rewards.map(r=>`
+      <div class="reward-alert">
+        <div style="font-size:13px;color:#7ec87e;font-weight:700;margin-bottom:4px">🎉 Récompense débloquée !</div>
+        <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">${r.count}× ${r.label}</div>
+        <div style="font-size:12px;color:#7ec87e">À offrir au client maintenant</div>
+      </div>`).join('')}
+
+    <div class="summary-box" style="margin-bottom:14px">
       ${items.map(p=>`
         <div class="summary-row">
           <div style="display:flex;align-items:center;gap:10px">
             <span style="font-size:18px">${p.icon}</span>
             <div>
               <div style="font-size:14px;color:#ddd">${state.cart[p.id]}× ${p.name}</div>
-              <div style="font-size:11px;color:#7ec87e">+${p.pts*state.cart[p.id]} pts</div>
+              <div style="font-size:11px;color:${LOYALTY[p.cat].color||'#c8956c'}">+${state.cart[p.id]} pt${state.cart[p.id]>1?'s':''} ${LOYALTY[p.cat].icon}</div>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
@@ -615,140 +454,138 @@ function renderSummary(items,total,earned,maxUse,discount,finalTotal){
           </div>
         </div>`).join('')}
     </div>
-    <div class="pts-earned-box">
-      <span style="font-size:13px;color:#7ec87e">✦ Points gagnés</span>
-      <span style="font-size:14px;font-weight:700;color:#7ec87e">+${earned} pts</span>
-    </div>
+
+    <!-- Aperçu jauges après achat -->
     ${state.client?`
-    <div class="use-pts-box">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:600;color:#ccc">
-        <span>💳 Utiliser les points</span>
-        <div style="display:flex;gap:8px;align-items:center">
-          <span class="badge">${state.usePoints} pts</span>
-          ${discount>0?`<span style="font-size:12px;color:#7ec87e">−${discount.toFixed(2)} €</span>`:''}
-        </div>
-      </div>
-      <div style="font-size:11px;color:#333;margin-bottom:10px">${state.client.points} pts dispo</div>
-      ${rewardsAvail.length>0?`
-        <div style="font-size:10px;letter-spacing:2px;color:#333;text-transform:uppercase;margin-bottom:8px">Offrir une récompense</div>
-        ${rewardsAvail.map(r=>`
-          <button onclick="redeemReward(${r.id})" style="display:flex;justify-content:space-between;align-items:center;background:#0d0d0d;border:1px solid ${r.color}44;border-radius:12px;padding:11px 16px;cursor:pointer;width:100%;margin-bottom:8px">
-            <div style="display:flex;gap:10px;align-items:center"><span style="font-size:18px">${r.icon}</span><span style="font-size:14px;color:#ccc">${r.name}</span></div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <span style="background:${r.color}22;color:${r.color};border:1px solid ${r.color}44;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">${r.pts} pts</span>
-              <span style="font-size:11px;color:${r.color}">Offrir →</span>
-            </div>
-          </button>`).join('')}
-        <div style="font-size:10px;letter-spacing:2px;color:#333;text-transform:uppercase;margin:10px 0 8px">Ou déduire sur la note</div>`:''}
-      <input type="range" min="0" max="${maxUse}" step="10" value="${state.usePoints}" oninput="state.usePoints=+this.value;render()">
-      <div class="quick-btns">
-        ${[['Non',0],['25%',Math.floor(maxUse*.25)],['50%',Math.floor(maxUse*.5)],['Tout',maxUse]].map(([l,v])=>
-          `<button class="quick-btn ${state.usePoints===v?'active':''}" onclick="state.usePoints=${v};render()">${l}</button>`
-        ).join('')}
-      </div>
-    </div>`:`<div style="font-size:13px;color:#555;text-align:center;margin-bottom:14px">Sans client — points non attribués</div>`}
+    <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:14px;padding:14px;margin-bottom:14px">
+      <div class="section-title" style="margin-bottom:12px">Points après cet achat</div>
+      ${CATS_ORDER.filter(cat=>newCounts[cat]>0).map(cat=>{
+        const rule=LOYALTY[cat];
+        const val=newCounts[cat];
+        const prog=((val%rule.seuil)/rule.seuil)*100;
+        const reste=rule.seuil-(val%rule.seuil);
+        return`<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+            <span style="color:#ddd">${rule.icon} ${rule.label}</span>
+            <span style="color:#777">${val%rule.seuil}/${rule.seuil} · ${reste===rule.seuil?'🎁 Offert !':reste+' restant'+(reste>1?'s':'')}</span>
+          </div>
+          <div class="gauge-bar"><div class="gauge-fill" style="width:${val%rule.seuil===0&&val>0?100:prog}%;background:${prog>=80?'#7ec87e':'#c8956c'}"></div></div>
+        </div>`;
+      }).join('')}
+    </div>`:''}
+
     <div class="summary-box">
-      ${discount>0?`
-        <div class="summary-row"><span style="color:#444">Sous-total</span><span style="color:#444;text-decoration:line-through">${total.toFixed(2)} €</span></div>
-        <div class="summary-row"><span style="color:#7ec87e">Réduction</span><span style="color:#7ec87e">−${discount.toFixed(2)} €</span></div>`:''}
       <div class="summary-row">
         <span style="font-size:18px;font-weight:700">Total</span>
-        <span style="font-size:20px;font-weight:700;color:#c8956c">${finalTotal.toFixed(2)} €</span>
+        <span style="font-size:20px;font-weight:700;color:#c8956c">${total.toFixed(2)} €</span>
       </div>
     </div>
-    <button class="pay-btn" onclick="handlePay(${earned},${finalTotal})">💳 Encaisser · ${finalTotal.toFixed(2)} €</button>`;
+    <button class="pay-btn" onclick="handlePay()">💳 Encaisser · ${total.toFixed(2)} €</button>`;
 }
 
-// ── CLIENT ────────────────────────────────────────────────────────────────────
-function renderClient(){
-  if(!state.client)return`
-    <div class="done-screen">
-      <div style="font-size:40px">👤</div>
-      <div style="font-size:15px;color:#555;text-align:center">Connectez-vous depuis l'écran d'accueil</div>
-      <button onclick="logout()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#c8956c;border-radius:12px;padding:12px 24px;font-size:14px;cursor:pointer">← Retour</button>
-    </div>`;
-  const pts=state.client.points;
-  const level=getLevel(pts);
-  const next=LEVELS[LEVELS.indexOf(level)+1];
-  const prog=next?Math.min(100,((pts-level.min)/(next.min-level.min))*100):100;
-  return`
-    <div style="display:flex;gap:5px;background:#0d0d0d;border-radius:12px;padding:4px;margin-bottom:22px">
-      ${[{id:'card',l:'Ma Carte'},{id:'history',l:'Historique'}].map(t=>
-        `<button class="tab ${state.clientTab===t.id?'active':''}" style="${state.clientTab===t.id?`color:${level.color};border-color:${level.color}44`:''}" onclick="state.clientTab='${t.id}';render()">${t.l}</button>`
-      ).join('')}
-    </div>
-    ${state.clientTab==='card'?`
-      <div class="card-visual" style="box-shadow:0 0 0 1px ${level.color}33,0 24px 60px rgba(0,0,0,.6)">
-        <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,${level.color}18 0%,transparent 70%);pointer-events:none"></div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px">
-          <div>
-            <div style="font-size:10px;letter-spacing:3px;color:${level.color};text-transform:uppercase;margin-bottom:3px">Carte Fidélité</div>
-            <div style="font-size:20px;font-weight:700;font-family:Georgia,serif;letter-spacing:1px;color:#e8e2d8">La craquante de lesigny</div>
-          </div>
-          <span class="${getBadgeClass(pts)}">${level.name}</span>
-        </div>
-        <div style="font-size:52px;font-weight:800;color:${level.color};letter-spacing:-3px;line-height:1;text-align:center;margin-bottom:4px">${pts.toLocaleString()}</div>
-        <div style="font-size:11px;color:#555;letter-spacing:2px;text-transform:uppercase;text-align:center">points</div>
-        <div style="font-size:13px;color:#7ec87e;text-align:center;margin-top:8px;font-weight:500">= ${(pts*PT_VAL).toFixed(2)} € de réduction</div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${prog}%;background:linear-gradient(90deg,${level.color}66,${level.color})"></div></div>
-        ${next?`<div style="font-size:11px;color:#444;text-align:right;margin-bottom:14px">${next.min-pts} pts avant ${next.name}</div>`:'<div style="margin-bottom:14px"></div>'}
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-size:10px;color:#3a3a3a;letter-spacing:2px;text-transform:uppercase">Titulaire</div>
-            <div style="font-size:15px;letter-spacing:1px;margin-top:3px;color:#ccc">${state.client.nom}</div>
-          </div>
-          <div style="font-family:monospace;font-size:11px;color:#2a2a2a;letter-spacing:2px">${state.client.telephone}</div>
-        </div>
-      </div>
-      <div class="qr-section">
-        <div class="section-title">Mon QR code</div>
-        <div id="qr-div-${state.client.id}" class="qr-div"></div>
-        <div style="font-size:12px;color:#555;text-align:center">Montrez ce code au caissier</div>
-        <button onclick="printQR()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#c8956c;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer">🖨️ Imprimer ma carte</button>
-      </div>
-      <div class="levels-box" style="margin-top:16px">
-        <div class="section-title">Récompenses</div>
-        ${REWARDS.map(r=>`
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;opacity:${pts>=r.pts?1:.3}">
-            <div style="display:flex;gap:10px;align-items:center">
-              <span style="font-size:18px">${r.icon}</span>
-              <span style="font-size:13px;color:${pts>=r.pts?'#ddd':'#555'}">${r.name}</span>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <span style="background:${r.color}22;color:${r.color};border:1px solid ${r.color}44;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">${r.pts} pts</span>
-              ${pts>=r.pts?`<span style="font-size:11px;color:#7ec87e">✓</span>`:''}
-            </div>
-          </div>`).join('')}
-        <div style="background:#0d0d0d;border-radius:10px;padding:10px 14px;font-size:12px;color:#444;line-height:1.6;margin-top:14px">
-          💬 Montrez votre QR code au caissier pour utiliser vos points.
-        </div>
-      </div>`:`
-      <div class="tx-list">
-        ${state.transactions.length===0?`<div style="text-align:center;color:#2e2e2e;font-size:13px;padding:24px">Aucune transaction</div>`:''}
-        ${state.transactions.map(tx=>`
-          <div class="tx-row">
-            <div>
-              <div style="font-size:13px;color:#ddd;margin-bottom:3px">${tx.label}</div>
-              <div style="font-size:11px;color:#444">${new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div>
-            </div>
-            <div style="font-family:monospace;font-weight:700;font-size:14px;color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pts</div>
-          </div>`).join('')}
-      </div>`}`;
-}
-
-// ── ACTIONS ───────────────────────────────────────────────────────────────────
+// ── ACTIONS CAISSE ────────────────────────────────────────────────────────────
 function addToCart(id){state.cart[id]=(state.cart[id]||0)+1;render();}
-function removeFromCart(id){state.cart[id]=Math.max(0,(state.cart[id]||0)-1);state.usePoints=0;render();}
-function goToSummary(){state.step='summary';render();}
-function clearClient(){state.client=null;state.transactions=[];render();}
+function removeFromCart(id){state.cart[id]=Math.max(0,(state.cart[id]||0)-1);render();}
+function clearClient(){state.client=null;state.transactions=[];state.colisToday=false;render();}
 function showNewClient(){const f=document.getElementById('new-client-form');if(f)f.style.display=f.style.display==='none'?'block':'none';}
 function showChangePIN(){const f=document.getElementById('change-pin-form');if(f)f.style.display=f.style.display==='none'?'block':'none';}
+
+async function addColis(type){
+  if(state.colisToday)return showToast('Colis déjà enregistré aujourd\'hui','#e87070');
+  if(!state.client)return showToast('Identifiez d\'abord le client','#e87070');
+
+  // Vérifier si achat en même temps
+  const hasProduct=Object.values(state.cart).some(v=>v>0);
+  if(!hasProduct)return showToast('Le client doit acheter un produit pour gagner le point colis','#e87070');
+
+  // Point aléatoire dans une catégorie achetée
+  const catsInCart=[...new Set(PRODUCTS.filter(p=>(state.cart[p.id]||0)>0).map(p=>p.cat))];
+  const randCat=catsInCart[Math.floor(Math.random()*catsInCart.length)];
+  const rule=LOYALTY[randCat];
+
+  // Mettre à jour le compteur et last_colis
+  const newVal=(state.client['pts_'+randCat]||0)+1;
+  await sb.from('clients').update({['pts_'+randCat]:newVal, last_colis:today()}).eq('id',state.client.id);
+  state.client['pts_'+randCat]=newVal;
+  state.colisToday=true;
+
+  // Enregistrer transaction
+  const caissierNom=state.caissierActif?state.caissierActif.nom:null;
+  await sb.from('transactions').insert({client_id:state.client.id,label:`📦 Colis ${type} → +1 pt bonus ${rule.icon}`,points:1,type:'earn',caissier_nom:caissierNom});
+
+  showToast(`📦 Colis ${type} · +1 pt ${rule.icon} (${rule.label})`,'#7eb8d4');
+  render();
+}
+
+async function handlePay(){
+  const items=PRODUCTS.filter(p=>(state.cart[p.id]||0)>0);
+  if(!items.length)return;
+  const caissierNom=state.caissierActif?state.caissierActif.nom:null;
+
+  if(state.client){
+    // Calculer nouveaux compteurs + points globaux
+    const updates={};
+    let globalPtsEarned=0;
+    const rewards=[];
+
+    items.forEach(it=>{
+      const qty=state.cart[it.id]||0;
+      const col='pts_'+it.cat;
+      const rule=LOYALTY[it.cat];
+      const before=state.client[col]||0;
+      const after=before+qty;
+      updates[col]=after;
+      globalPtsEarned+=qty;
+
+      // Récompenses
+      const beforeR=Math.floor(before/rule.seuil);
+      const afterR=Math.floor(after/rule.seuil);
+      if(afterR>beforeR)rewards.push({cat:it.cat,rule,count:afterR-beforeR});
+    });
+
+    updates.points=(state.client.points||0)+globalPtsEarned;
+    await sb.from('clients').update(updates).eq('id',state.client.id);
+
+    // Transactions
+    for(const it of items){
+      await sb.from('transactions').insert({
+        client_id:state.client.id,
+        label:`${state.cart[it.id]}× ${it.name}`,
+        points:state.cart[it.id],
+        type:'earn',
+        caissier_nom:caissierNom
+      });
+    }
+
+    // Si récompenses → les déduire des compteurs
+    for(const r of rewards){
+      const col='pts_'+r.cat;
+      updates[col]=updates[col]-(r.count*r.rule.seuil);
+      await sb.from('clients').update({[col]:updates[col]}).eq('id',state.client.id);
+      await sb.from('transactions').insert({
+        client_id:state.client.id,
+        label:`${r.count}× ${r.rule.reward}`,
+        points:-(r.count*r.rule.seuil),
+        type:'redeem',
+        caissier_nom:caissierNom
+      });
+    }
+
+    // Update local
+    Object.assign(state.client,updates);
+  }
+
+  state.cart={};state.step='done';
+  showToast(`✅ Encaissé !`,'#8fc98a');
+  render();
+  setTimeout(()=>{state.step='catalog';state.client=null;state.transactions=[];state.colisToday=false;render();},2500);
+}
 
 async function searchClient(){
   const tel=document.getElementById('search-tel')?.value?.trim();
   if(!tel)return;
   const {data}=await sb.from('clients').select('*').eq('telephone',tel).single();
-  if(data){state.client=data;await loadTransactions(data.id);render();}
+  if(data){await loadClient(data);render();}
   else showToast('Client non trouvé','#e87070');
 }
 async function createClient(){
@@ -757,9 +594,9 @@ async function createClient(){
   const pin=document.getElementById('new-pin')?.value?.trim();
   if(!nom||!tel)return showToast('Remplissez nom et téléphone','#e87070');
   if(!pin||pin.length!==4)return showToast('PIN doit faire 4 chiffres','#e87070');
-  const {data,error}=await sb.from('clients').insert({nom,telephone:tel,points:0,pin}).select().single();
+  const {data,error}=await sb.from('clients').insert({nom,telephone:tel,points:0,pin,pts_baguette:0,pts_tradition:0,pts_croissant:0,pts_chocolat:0,pts_cafe:0}).select().single();
   if(error)return showToast('Numéro déjà utilisé','#e87070');
-  state.client=data;state.transactions=[];
+  await loadClient(data);
   showToast(`✅ ${nom} inscrit !`,'#8fc98a');render();
 }
 async function updatePIN(){
@@ -770,33 +607,274 @@ async function updatePIN(){
   showToast('✅ PIN mis à jour !','#8fc98a');
   document.getElementById('change-pin-form').style.display='none';
 }
-async function handlePay(earned,finalTotal){
-  const items=CATALOG.filter(p=>(state.cart[p.id]||0)>0);
-  const used=state.usePoints;
-  const discount=used*PT_VAL;
-  const caissierNom=state.caissierActif?state.caissierActif.nom:null;
-  if(state.client){
-    const newPts=state.client.points+earned-used;
-    await sb.from('clients').update({points:newPts}).eq('id',state.client.id);
-    if(used>0)await sb.from('transactions').insert({client_id:state.client.id,label:`${used} pts utilisés (−${discount.toFixed(2)} €)`,points:-used,type:'redeem',caissier_nom:caissierNom});
-    for(const it of items)await sb.from('transactions').insert({client_id:state.client.id,label:`${state.cart[it.id]}× ${it.name}`,points:it.pts*state.cart[it.id],type:'earn',caissier_nom:caissierNom});
-    state.client.points=newPts;
-  }
-  state.cart={};state.usePoints=0;state.step='done';
-  showToast(`✅ Encaissé${state.client?' · +'+earned+' pts':''}`,'#8fc98a');
-  render();
-  setTimeout(()=>{state.step='catalog';state.client=null;state.transactions=[];render();},2500);
+
+// ── CLIENT VIEW ───────────────────────────────────────────────────────────────
+function renderClient(){
+  if(!state.client)return`
+    <div class="done-screen">
+      <div style="font-size:40px">👤</div>
+      <div style="font-size:15px;color:#555;text-align:center">Connectez-vous depuis l'écran d'accueil</div>
+      <button onclick="logout()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#c8956c;border-radius:12px;padding:12px 24px;font-size:14px;cursor:pointer">← Retour</button>
+    </div>`;
+  const c=state.client;
+  const level=getLevel(c.points);
+  const next=[{name:"Bronze",min:0,max:499,color:"#c8956c"},{name:"Argent",min:500,max:999,color:"#b0bec5"},{name:"Or",min:1000,max:1999,color:"#f9d056"},{name:"Platine",min:2000,max:Infinity,color:"#e0e0ff"}][[0,1,2,3].find(i=>[{name:"Bronze",min:0,max:499,color:"#c8956c"},{name:"Argent",min:500,max:999,color:"#b0bec5"},{name:"Or",min:1000,max:1999,color:"#f9d056"},{name:"Platine",min:2000,max:Infinity,color:"#e0e0ff"}][i]===level)+1];
+  return`
+    <div class="tabs">
+      ${[{id:'card',l:'🎴 Carte'},{id:'jauges',l:'📊 Points'},{id:'history',l:'📋 Historique'}].map(t=>
+        `<button class="tab ${state.clientTab===t.id?'active':''}" style="${state.clientTab===t.id?`color:${level.color};border-color:${level.color}44`:''}" onclick="state.clientTab='${t.id}';render()">${t.l}</button>`
+      ).join('')}
+    </div>
+    ${state.clientTab==='card'?renderClientCard(c,level,next):''}
+    ${state.clientTab==='jauges'?renderClientJauges(c):''}
+    ${state.clientTab==='history'?renderClientHistory():''}`;
 }
-async function redeemReward(rewardId){
-  if(!state.client)return;
-  const r=REWARDS.find(x=>x.id===rewardId);
-  if(!r||state.client.points<r.pts)return;
-  const newPts=state.client.points-r.pts;
-  const caissierNom=state.caissierActif?state.caissierActif.nom:null;
-  await sb.from('clients').update({points:newPts}).eq('id',state.client.id);
-  await sb.from('transactions').insert({client_id:state.client.id,label:`${r.name} offert ${r.icon}`,points:-r.pts,type:'redeem',caissier_nom:caissierNom});
-  state.client.points=newPts;
-  showToast(`🎉 ${r.name} offert !`,r.color);render();
+
+function renderClientCard(c,level,next){
+  const prog=next?Math.min(100,((c.points-level.min)/(next.min-level.min))*100):100;
+  return`
+    <div class="card-visual" style="box-shadow:0 0 0 1px ${level.color}33,0 20px 50px rgba(0,0,0,.6)">
+      <div style="position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,${level.color}18 0%,transparent 70%);pointer-events:none"></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+        <div>
+          <div style="font-size:9px;letter-spacing:3px;color:${level.color};text-transform:uppercase;margin-bottom:3px">Carte Fidélité</div>
+          <div style="font-size:16px;font-weight:700;font-family:Georgia,serif;color:#e8e2d8">${SHOP_NAME}</div>
+        </div>
+        <span class="${getBadgeClass(c.points)}">${level.name}</span>
+      </div>
+      <div style="font-size:48px;font-weight:800;color:${level.color};letter-spacing:-3px;line-height:1;text-align:center;margin-bottom:4px">${c.points.toLocaleString()}</div>
+      <div style="font-size:10px;color:#555;letter-spacing:2px;text-transform:uppercase;text-align:center">points globaux</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${prog}%;background:linear-gradient(90deg,${level.color}66,${level.color})"></div></div>
+      ${next?`<div style="font-size:11px;color:#444;text-align:right;margin-bottom:14px">${next.min-c.points} pts avant ${next.name}</div>`:'<div style="margin-bottom:14px"></div>'}
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:9px;color:#3a3a3a;letter-spacing:2px;text-transform:uppercase">Titulaire</div>
+          <div style="font-size:14px;letter-spacing:1px;margin-top:2px;color:#ccc">${c.nom}</div>
+        </div>
+        <div style="font-family:monospace;font-size:10px;color:#2a2a2a">${c.telephone}</div>
+      </div>
+    </div>
+    <div class="qr-section">
+      <div class="section-title">Mon QR code</div>
+      <div id="qr-div-${c.id}" class="qr-div"></div>
+      <div style="font-size:12px;color:#555;text-align:center">Montrez ce code au caissier</div>
+      <button onclick="printQR()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#c8956c;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer">🖨️ Imprimer ma carte</button>
+    </div>`;
+}
+
+function renderClientJauges(c){
+  return`
+    <div class="section-title">Mes points par produit</div>
+    <div class="gauge-grid">
+      ${CATS_ORDER.map(cat=>{
+        const rule=LOYALTY[cat];
+        const val=(c['pts_'+cat]||0);
+        const prog=((val%rule.seuil)/rule.seuil)*100;
+        const restant=rule.seuil-(val%rule.seuil);
+        const offerts=Math.floor(val/rule.seuil);
+        return`<div class="gauge-row">
+          <div class="gauge-header">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:20px">${rule.icon}</span>
+              <span style="font-size:14px;color:#ddd;font-weight:500">${rule.label}</span>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:15px;font-weight:700;color:#c8956c;font-family:monospace">${val%rule.seuil}/${rule.seuil}</div>
+              ${offerts>0?`<div style="font-size:10px;color:#7ec87e">🎁 ${offerts} offert${offerts>1?'s':''}</div>`:''}
+            </div>
+          </div>
+          <div class="gauge-bar">
+            <div class="gauge-fill" style="width:${prog}%;background:${prog>=80?'#7ec87e':prog>=50?'#f9d056':'#c8956c'}"></div>
+          </div>
+          <div style="font-size:11px;color:#444;margin-top:5px">
+            ${restant===rule.seuil?'🎉 Récompense disponible !':restant+' achat'+( restant>1?'s':'')+' avant '+rule.reward}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="background:#111;border:1px solid #1e1e1e;border-radius:12px;padding:12px 16px;margin-top:14px;font-size:12px;color:#444;line-height:1.7">
+      💬 Montrez votre QR code au caissier pour faire valoir vos récompenses.
+    </div>`;
+}
+
+function renderClientHistory(){
+  return`
+    <div class="section-title">30 dernières transactions</div>
+    <div class="tx-list">
+      ${state.transactions.length===0?`<div class="empty">Aucune transaction</div>`:''}
+      ${state.transactions.map(tx=>`
+        <div class="tx-row">
+          <div>
+            <div style="font-size:13px;color:#ddd;margin-bottom:2px">${tx.label}</div>
+            <div style="font-size:11px;color:#444">${new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div>
+          </div>
+          <div style="font-family:monospace;font-weight:700;font-size:13px;color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pt${Math.abs(tx.points)>1?'s':''}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ── PATRON ────────────────────────────────────────────────────────────────────
+async function loadPatronData(){
+  const [{data:c},{data:t},{data:cl}]=await Promise.all([
+    sb.from('caissiers').select('*').order('created_at',{ascending:false}),
+    sb.from('transactions').select('*').order('created_at',{ascending:false}).limit(100),
+    sb.from('clients').select('*').order('created_at',{ascending:false}),
+  ]);
+  state.caissiers=c||[];state.allTransactions=t||[];state.allClients=cl||[];
+}
+async function selectPatronClient(client){
+  state.selectedClient=client;
+  const {data}=await sb.from('transactions').select('*').eq('client_id',client.id).order('created_at',{ascending:false}).limit(30);
+  state.selectedClientTx=data||[];render();
+}
+
+function renderPatron(){
+  if(state.selectedClient)return renderPatronClientDetail();
+  const PTABS=[{id:'stats',l:'📊 Stats'},{id:'clients',l:'👥 Clients'},{id:'caissiers',l:'🏪 Caissiers'},{id:'activite',l:'📋 Activité'}];
+  const txEarn=state.allTransactions.filter(t=>t.type==='earn');
+  const totalPts=txEarn.reduce((s,t)=>s+(t.points||0),0);
+  const statsCaissier={};
+  state.allTransactions.forEach(t=>{
+    if(t.type==='earn'&&t.caissier_nom){
+      if(!statsCaissier[t.caissier_nom])statsCaissier[t.caissier_nom]={tx:0,pts:0};
+      statsCaissier[t.caissier_nom].tx++;statsCaissier[t.caissier_nom].pts+=t.points||0;
+    }
+  });
+  const filtered=state.allClients.filter(c=>c.nom.toLowerCase().includes(state.clientSearch.toLowerCase())||c.telephone.includes(state.clientSearch));
+  return`
+    <div class="tabs">
+      ${PTABS.map(t=>`<button class="tab ${state.patronTab===t.id?'active':''}" style="${state.patronTab===t.id?'color:#f9d056;border-color:rgba(249,208,86,.3)':''}" onclick="state.patronTab='${t.id}';render()">${t.l}</button>`).join('')}
+    </div>
+    ${state.patronTab==='stats'?`
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-val">${state.allClients.length}</div><div class="stat-label">Clients</div></div>
+        <div class="stat-card"><div class="stat-val">${state.caissiers.filter(c=>c.actif).length}</div><div class="stat-label">Caissiers</div></div>
+        <div class="stat-card"><div class="stat-val">${totalPts.toLocaleString()}</div><div class="stat-label">Points distribués</div></div>
+        <div class="stat-card"><div class="stat-val">${txEarn.length}</div><div class="stat-label">Transactions</div></div>
+      </div>
+      <div class="section-title">Par caissier</div>
+      ${Object.keys(statsCaissier).length===0?`<div class="empty">Aucune activité</div>`:Object.entries(statsCaissier).map(([nom,s])=>`
+        <div class="caissier-row">
+          <div><div style="font-size:14px;color:#ddd;font-weight:600">${nom}</div><div style="font-size:12px;color:#555;margin-top:2px">${s.tx} transaction${s.tx>1?'s':''}</div></div>
+          <div style="font-size:14px;color:#c8956c;font-weight:700">+${s.pts} pts</div>
+        </div>`).join('')}`:''}
+    ${state.patronTab==='clients'?`
+      <input class="input" type="text" placeholder="🔍 Rechercher..." oninput="state.clientSearch=this.value;render()" value="${state.clientSearch}" style="margin-bottom:12px">
+      <div style="font-size:12px;color:#555;margin-bottom:12px">${filtered.length} client${filtered.length>1?'s':''}</div>
+      ${filtered.map(c=>{const lv=getLevel(c.points);return`
+        <div class="client-row" onclick="selectPatronClient(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+          <div>
+            <div style="font-size:14px;color:#ddd;font-weight:600">${c.nom}</div>
+            <div style="font-size:12px;color:#555;margin-top:2px">${c.telephone} · ${new Date(c.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div>
+          </div>
+          <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+            <span class="${getBadgeClass(c.points)}">${lv.name}</span>
+            <span style="font-size:13px;font-weight:700;color:${lv.color};font-family:monospace">${c.points} pts</span>
+          </div>
+        </div>`}).join('')}
+      ${filtered.length===0?`<div class="empty">Aucun client trouvé</div>`:''}`:''}
+    ${state.patronTab==='caissiers'?`
+      <div style="background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:16px;margin-bottom:16px">
+        <div class="section-title">Créer un caissier</div>
+        <input class="input" type="text" id="new-caissier-nom" placeholder="Prénom et nom">
+        <input class="input" type="text" id="new-caissier-code" placeholder="Code d'accès (ex: MARIE01)">
+        <button onclick="createCaissier()" class="btn-primary">Créer</button>
+      </div>
+      <div class="section-title">Caissiers actifs</div>
+      ${state.caissiers.filter(c=>c.actif).map(c=>`
+        <div class="caissier-row">
+          <div><div style="font-size:14px;color:#ddd;font-weight:600">${c.nom}</div><div style="font-size:12px;color:#555;margin-top:2px">Code : <span style="color:#c8956c;font-family:monospace">${c.code}</span></div></div>
+          <button class="del-btn" onclick="deleteCaissier('${c.id}')">Désactiver</button>
+        </div>`).join('')}
+      ${state.caissiers.filter(c=>c.actif).length===0?`<div class="empty">Aucun caissier actif</div>`:''}`:''}
+    ${state.patronTab==='activite'?`
+      <div class="section-title">Dernières transactions</div>
+      <div class="tx-list">
+        ${state.allTransactions.slice(0,50).map(tx=>`
+          <div class="tx-row">
+            <div>
+              <div style="font-size:13px;color:#ddd;margin-bottom:2px">${tx.label}</div>
+              <div style="font-size:11px;color:#444;display:flex;gap:8px">
+                <span>${new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+                ${tx.caissier_nom?`<span style="color:#666">· ${tx.caissier_nom}</span>`:''}
+              </div>
+            </div>
+            <div style="font-family:monospace;font-weight:700;font-size:13px;color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pt${Math.abs(tx.points)>1?'s':''}</div>
+          </div>`).join('')}
+        ${state.allTransactions.length===0?`<div class="empty">Aucune activité</div>`:''}
+      </div>`:''}`;
+}
+
+function renderPatronClientDetail(){
+  const c=state.selectedClient;
+  const level=getLevel(c.points);
+  const next=[{name:"Bronze",min:0,max:499,color:"#c8956c"},{name:"Argent",min:500,max:999,color:"#b0bec5"},{name:"Or",min:1000,max:1999,color:"#f9d056"},{name:"Platine",min:2000,max:Infinity,color:"#e0e0ff"}][[0,1,2,3].find(i=>[{name:"Bronze",min:0,max:499,color:"#c8956c"},{name:"Argent",min:500,max:999,color:"#b0bec5"},{name:"Or",min:1000,max:1999,color:"#f9d056"},{name:"Platine",min:2000,max:Infinity,color:"#e0e0ff"}][i]===level)+1];
+  const prog=next?Math.min(100,((c.points-level.min)/(next.min-level.min))*100):100;
+  const visits=state.selectedClientTx.filter(t=>t.type==='earn').length;
+  return`
+    <button class="back-btn" onclick="state.selectedClient=null;render()">← Retour à la liste</button>
+    <div style="background:#111;border:1px solid ${level.color}33;border-radius:16px;padding:16px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div>
+          <div style="font-size:18px;font-weight:700;color:#ddd">${c.nom}</div>
+          <div style="font-size:13px;color:#555;margin-top:2px">${c.telephone}</div>
+          <div style="font-size:11px;color:#444;margin-top:2px">Depuis le ${new Date(c.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</div>
+        </div>
+        <span class="${getBadgeClass(c.points)}">${level.name}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="background:#0d0d0d;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:${level.color}">${c.points}</div>
+          <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-top:2px">Points globaux</div>
+        </div>
+        <div style="background:#0d0d0d;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:#7ec87e">${visits}</div>
+          <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-top:2px">Visites</div>
+        </div>
+      </div>
+      <!-- Jauges par produit -->
+      <div class="section-title">Points par produit</div>
+      ${CATS_ORDER.map(cat=>{
+        const rule=LOYALTY[cat];
+        const val=(c['pts_'+cat]||0);
+        const prog2=((val%rule.seuil)/rule.seuil)*100;
+        return`<div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="color:#bbb">${rule.icon} ${rule.label}</span>
+            <span style="color:#777">${val%rule.seuil}/${rule.seuil}</span>
+          </div>
+          <div class="gauge-bar"><div class="gauge-fill" style="width:${prog2}%;background:${prog2>=80?'#7ec87e':prog2>=50?'#f9d056':'#c8956c'}"></div></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="section-title">30 dernières transactions</div>
+    <div class="tx-list">
+      ${state.selectedClientTx.length===0?`<div class="empty">Aucune transaction</div>`:''}
+      ${state.selectedClientTx.map(tx=>`
+        <div class="tx-row">
+          <div>
+            <div style="font-size:13px;color:#ddd;margin-bottom:2px">${tx.label}</div>
+            <div style="font-size:11px;color:#444;display:flex;gap:8px">
+              <span>${new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
+              ${tx.caissier_nom?`<span style="color:#666">· ${tx.caissier_nom}</span>`:''}
+            </div>
+          </div>
+          <div style="font-family:monospace;font-weight:700;font-size:13px;color:${tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e'}">${tx.points>0?'+':''}${tx.points} pt${Math.abs(tx.points)>1?'s':''}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+async function createCaissier(){
+  const nom=document.getElementById('new-caissier-nom')?.value?.trim();
+  const code=document.getElementById('new-caissier-code')?.value?.trim().toUpperCase();
+  if(!nom||!code)return showToast('Remplissez nom et code','#e87070');
+  const {error}=await sb.from('caissiers').insert({nom,code,actif:true});
+  if(error)return showToast('Code déjà utilisé','#e87070');
+  showToast(`✅ ${nom} créé !`,'#8fc98a');await loadPatronData();render();
+}
+async function deleteCaissier(id){
+  await sb.from('caissiers').update({actif:false}).eq('id',id);
+  showToast('Caissier désactivé','#8fc98a');await loadPatronData();render();
 }
 async function loadTransactions(clientId){
   const {data}=await sb.from('transactions').select('*').eq('client_id',clientId).order('created_at',{ascending:false}).limit(30);
@@ -811,7 +889,7 @@ function printQR(){
     <style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif}
     .card{border:2px solid #c8956c;border-radius:16px;padding:24px;text-align:center;width:280px}</style></head>
     <body><div class="card">
-    <div style="font-size:18px;font-weight:bold;color:#1a1410;margin-bottom:4px">La craquante de lesigny</div>
+    <div style="font-size:16px;font-weight:bold;color:#1a1410;margin-bottom:4px">${SHOP_NAME}</div>
     <div style="font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Carte Fidélité</div>
     <img src="${canvas.toDataURL()}" width="160" height="160">
     <div style="font-size:16px;font-weight:bold;margin-top:12px">${state.client.nom}</div>
@@ -821,7 +899,7 @@ function printQR(){
 }
 function showToast(msg,color='#8fc98a'){
   state.toast={msg,color};render();
-  setTimeout(()=>{state.toast=null;render();},3000);
+  setTimeout(()=>{state.toast=null;render();},3500);
 }
 render();
 </script>

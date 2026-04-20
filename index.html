@@ -218,6 +218,7 @@ function render(){
       ${state.role==='patron'?renderPatron():state.view==='cashier'?renderCashier():renderClient()}
     </div>`;
   if(state.view==='client'&&state.clientTab==='card'&&state.client)generateQR(state.client.id);
+  if(state.role==='patron'&&state.patronTab==='stats')generatepatronQR();
 }
 
 function renderClientStrip(){
@@ -711,6 +712,13 @@ function renderPatron(){
         <div class="stat-card"><div class="stat-val">${txEarn.length}</div><div class="stat-label">Transactions</div></div>
       </div>
       <div class="section-title">Par caissier</div>
+      <div style="background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:20px;margin-bottom:16px;display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div style="font-size:12px;color:#555;text-align:center;line-height:1.7">Imprimez ce QR code et collez-le sur votre comptoir.<br>Vos clients le scannent pour accéder à leur carte.</div>
+        <div id="patron-qr" style="background:#fff;padding:10px;border-radius:12px"></div>
+        <div style="font-size:11px;color:#444;font-family:monospace;text-align:center">${window.location.origin}/client</div>
+        <button onclick="printPatronQR()" style="background:#1a1a1a;border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer">🖨️ Imprimer le QR code</button>
+      </div>
+      <div class="section-title" style="margin-top:20px">QR code accès client</div>
       ${Object.keys(statsCaissier).length===0?`<div class="empty">Aucune activité</div>`:Object.entries(statsCaissier).map(([nom,s])=>`
         <div class="caissier-row"><div><div style="font-size:14px;color:#ddd;font-weight:600">${nom}</div><div style="font-size:12px;color:#555;margin-top:2px">${s.tx} transaction${s.tx>1?'s':''}</div></div><div style="font-size:14px;color:#c8956c;font-weight:700">+${s.pts} pts</div></div>`).join('')}`:''}
     ${state.patronTab==='produits'?renderPatronProduits():''}
@@ -1009,7 +1017,35 @@ function printQR(){
     </div></body></html>`);
   win.document.close();win.print();
 }
-function showToast(msg,color='#8fc98a'){
+function generatePatronQR(){
+  setTimeout(()=>{
+    const div=document.getElementById('patron-qr');
+    if(!div||div.querySelector('canvas'))return;
+    new QRCode(div,{
+      text:window.location.origin+'/client',
+      width:180,height:180,
+      colorDark:'#000000',colorLight:'#ffffff'
+    });
+  },100);
+}
+function printPatronQR(){
+  const div=document.getElementById('patron-qr');
+  const canvas=div?.querySelector('canvas');
+  if(!canvas)return;
+  const win=window.open('','_blank');
+  win.document.write(`<html><head><title>QR Code Fidélité</title>
+    <style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif}
+    .card{border:2px solid #c8956c;border-radius:16px;padding:28px;text-align:center;width:300px}</style></head>
+    <body><div class="card">
+    <div style="font-size:18px;font-weight:bold;color:#1a1410;margin-bottom:6px">${SHOP_NAME}</div>
+    <div style="font-size:11px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Programme Fidélité</div>
+    <img src="${canvas.toDataURL()}" width="180" height="180">
+    <div style="font-size:15px;font-weight:bold;margin-top:16px;color:#1a1410">Scannez pour accéder<br>à votre carte fidélité</div>
+    <div style="font-size:11px;color:#aaa;margin-top:8px">C'est gratuit et sans téléchargement</div>
+    </div></body></html>`);
+  win.document.close();win.print();
+}
+  function showToast(msg,color='#8fc98a'){
   state.toast={msg,color};render();
   setTimeout(()=>{state.toast=null;render();},3500);
 }

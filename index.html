@@ -937,13 +937,18 @@ async function saveAjustPoints(clientId){
     state.selectedClientPoints[p.id]=clamped;
   }
   await sb.from('clients').update({points:globalPts}).eq('id',clientId);
+  // Ne rien noter si les points globaux n'ont pas changé
+const ancienPts=state.selectedClient.points||0;
+const diff=globalPts-ancienPts;
+if(diff!==0){
   await sb.from('transactions').insert({
     client_id:clientId,
-    label:`✏️ Ajustement manuel par le patron`,
-    points:0,
+    label:`✏️ Ajustement patron (${diff>0?'+':''}${diff} pts)`,
+    points:diff,
     type:'bonus',
     caissier_nom:'Patron'
   });
+}
   showToast('✅ Points ajustés !','#8fc98a');
   document.getElementById('ajust-points-form').style.display='none';
   await selectPatronClient(clientId,state.selectedClient);

@@ -1020,13 +1020,17 @@ function printQR(){
 function generatePatronQR(){
   setTimeout(()=>{
     const div=document.getElementById('patron-qr');
-    if(!div||div.querySelector('canvas'))return;
+    if(!div)return;
+    div.innerHTML='';
     new QRCode(div,{
       text:window.location.origin+'/client',
-      width:180,height:180,
-      colorDark:'#000000',colorLight:'#ffffff'
+      width:180,
+      height:180,
+      colorDark:'#000000',
+      colorLight:'#ffffff',
+      correctLevel:QRCode.CorrectLevel.H
     });
-  },100);
+  },300);
 }
 function printPatronQR(){
   const div=document.getElementById('patron-qr');

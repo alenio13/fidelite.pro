@@ -218,7 +218,6 @@ function render(){
       ${state.role==='patron'?renderPatron():state.view==='cashier'?renderCashier():renderClient()}
     </div>`;
   if(state.view==='client'&&state.clientTab==='card'&&state.client)generateQR(state.client.id);
-  if(state.role==='patron'&&state.patronTab==='stats')generatepatronQR();
 }
 
 function renderClientStrip(){
@@ -714,7 +713,7 @@ function renderPatron(){
       <div class="section-title">Par caissier</div>
       <div style="background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:20px;margin-bottom:16px;display:flex;flex-direction:column;align-items:center;gap:12px">
         <div style="font-size:12px;color:#555;text-align:center;line-height:1.7">Imprimez ce QR code et collez-le sur votre comptoir.<br>Vos clients le scannent pour accéder à leur carte.</div>
-        <div id="patron-qr" style="background:#fff;padding:10px;border-radius:12px"></div>
+        <img id="patron-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(window.location.origin+'/client')}" style="border-radius:12px;width:180px;height:180px" alt="QR Code">
         <div style="font-size:11px;color:#444;font-family:monospace;text-align:center">${window.location.origin}/client</div>
         <button onclick="printPatronQR()" style="background:#1a1a1a;border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer">🖨️ Imprimer le QR code</button>
       </div>
@@ -1016,21 +1015,6 @@ function printQR(){
     <div style="font-size:11px;color:#aaa;margin-top:6px">Présentez ce QR code en caisse</div>
     </div></body></html>`);
   win.document.close();win.print();
-}
-function generatePatronQR(){
-  setTimeout(()=>{
-    const div=document.getElementById('patron-qr');
-    if(!div)return;
-    div.innerHTML='';
-    new QRCode(div,{
-      text:window.location.origin+'/client',
-      width:180,
-      height:180,
-      colorDark:'#000000',
-      colorLight:'#ffffff',
-      correctLevel:QRCode.CorrectLevel.H
-    });
-  },300);
 }
 function printPatronQR(){
   const div=document.getElementById('patron-qr');

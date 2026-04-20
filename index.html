@@ -665,13 +665,53 @@ function renderClientHistory(){return`
 
 // ── PATRON ────────────────────────────────────────────────────────────────────
 async function loadPatronData(){
-  const [{data:c},{data:t},{data:cl}]=await Promise.all([
+  const moisActuel=new Date().toISOString().slice(0,7);
+  const [{data:c},{data:t},{data:cl},{data:sm}]=await Promise.all([
     sb.from('caissiers').select('*').order('created_at',{ascending:false}),
     sb.from('transactions').select('*').order('created_at',{ascending:false}).limit(100),
     sb.from('clients').select('*').order('created_at',{ascending:false}),
+    sb.from('stats_mensuelles').select('*').order('mois',{ascending:false}).limit(12),
   ]);
   state.caissiers=c||[];state.allTransactions=t||[];state.allClients=cl||[];
+  state.statsMensuelles=sm||[];
+
+  // Archivage automatique le 1er du mois
+  await archivageAuto(moisActuel);
   await loadProducts();
+}
+
+async function archivageAuto(moisActuel){
+  // Vérifier si le mois précédent est déjà archivé
+  const moisPrecedent=new Date(moisActuel+'-01');
+  moisPrecedent.setMonth(moisPrecedent.getMonth()-1);
+  const moisPrecedentStr=moisPrecedent.toISOString().slice(0,7);
+  const dejaArchive=state.statsMensuelles.find(s=>s.mois===moisPrecedentStr);
+  if(dejaArchive)return;
+
+  // Calculer les stats du mois précédent
+  const txMoisPrec=(state.allTransactions||[]).filter(t=>{
+    return t.created_at&&t.created_at.slice(0,7)===moisPrecedentStr&&t.type==='earn';
+  });
+  if(!txMoisPrec.length)return;
+
+  const ptsDist=txMoisPrec.reduce((s,t)=>s+(t.points||0),0);
+  const statsCaissiers={};
+  txMoisPrec.forEach(t=>{
+    if(t.caissier_nom){
+      if(!statsCaissiers[t.caissier_nom])statsCaissiers[t.caissier_nom]={tx:0,pts:0};
+      statsCaissiers[t.caissier_nom].tx++;
+      statsCaissiers[t.caissier_nom].pts+=t.points||0;
+    }
+  });
+  const nouveauxClients=(state.allClients||[]).filter(c=>c.created_at&&c.created_at.slice(0,7)===moisPrecedentStr).length;
+
+  await sb.from('stats_mensuelles').insert({
+    mois:moisPrecedentStr,
+    points_distribues:ptsDist,
+    nb_transactions:txMoisPrec.length,
+    nb_nouveaux_clients:nouveauxClients,
+    stats_caissiers:statsCaissiers,
+  });
 }
 
 async function selectPatronClient(clientId,clientObj){
@@ -710,6 +750,45 @@ function renderPatron(){
         <div class="stat-card"><div class="stat-val">${totalPts}</div><div class="stat-label">Points distribués</div></div>
         <div class="stat-card"><div class="stat-val">${txEarn.length}</div><div class="stat-label">Transactions</div></div>
       </div>
+      <div class="section-title">Ce mois-ci (${new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'})})</div>
+<div class="stat-grid" style="margin-bottom:16px">
+  ${(()=>{
+    const moisActuel=new Date().toISOString().slice(0,7);
+    const txMois=(state.allTransactions||[]).filter(t=>t.created_at&&t.created_at.slice(0,7)===moisActuel&&t.type==='earn');
+    const ptsMois=txMois.reduce((s,t)=>s+(t.points||0),0);
+    const nvClients=(state.allClients||[]).filter(c=>c.created_at&&c.created_at.slice(0,7)===moisActuel).length;
+    return`
+      <div class="stat-card"><div class="stat-val">${ptsMois}</div><div class="stat-label">Points ce mois</div></div>
+      <div class="stat-card"><div class="stat-val">${txMois.length}</div><div class="stat-label">Transactions</div></div>
+      <div class="stat-card"><div class="stat-val">${nvClients}</div><div class="stat-label">Nouveaux clients</div></div>
+      <div class="stat-card" style="cursor:pointer;border-color:rgba(232,112,112,.3)" onclick="resetStatsConfirm()">
+        <div class="stat-val" style="font-size:20px;color:#e87070">↺</div>
+        <div class="stat-label" style="color:#e87070">Remettre à zéro</div>
+      </div>`;
+  })()}
+</div>
+<div class="section-title">Historique mensuel</div>
+<div style="margin-bottom:20px">
+  ${(state.statsMensuelles||[]).length===0?`<div class="empty">Aucun historique pour l'instant</div>`:''}
+  ${(state.statsMensuelles||[]).map(s=>`
+    <div style="background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:14px 16px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:700;color:#ddd;text-transform:capitalize">${new Date(s.mois+'-01').toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</div>
+        <div style="text-align:right">
+          <div style="font-size:14px;font-weight:700;color:#c8956c">${s.points_distribues} pts</div>
+          <div style="font-size:11px;color:#555">${s.nb_transactions} transactions</div>
+        </div>
+      </div>
+      ${s.nb_nouveaux_clients>0?`<div style="font-size:12px;color:#7ec87e;margin-bottom:8px">+${s.nb_nouveaux_clients} nouveau${s.nb_nouveaux_clients>1?'x':''} client${s.nb_nouveaux_clients>1?'s':''}</div>`:''}
+      ${Object.keys(s.stats_caissiers||{}).length>0?`
+        <div style="font-size:10px;letter-spacing:2px;color:#333;text-transform:uppercase;margin-bottom:6px">Par caissier</div>
+        ${Object.entries(s.stats_caissiers).map(([nom,data])=>`
+          <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-top:1px solid #161616">
+            <span style="color:#888">${nom}</span>
+            <span style="color:#c8956c">${data.pts} pts · ${data.tx} ventes</span>
+          </div>`).join('')}`:''}
+    </div>`).join('')}
+</div>
       <div class="section-title">Par caissier</div>
       <div style="background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:20px;margin-bottom:16px;display:flex;flex-direction:column;align-items:center;gap:12px">
         <div style="font-size:12px;color:#555;text-align:center;line-height:1.7">Imprimez ce QR code et collez-le sur votre comptoir.<br>Vos clients le scannent pour accéder à leur carte.</div>
@@ -917,6 +996,24 @@ async function createCaissier(){
   const {error}=await sb.from('caissiers').insert({nom,code,actif:true});
   if(error)return showToast('Code déjà utilisé','#e87070');
   showToast(`✅ ${nom} créé !`,'#8fc98a');await loadPatronData();render();
+}
+  async function resetStatsConfirm(){
+  if(!confirm('Remettre à zéro le compteur de ce mois ? Les points des clients ne seront pas affectés.'))return;
+  const moisActuel=new Date().toISOString().slice(0,7);
+  // Archiver d'abord le mois actuel
+  const txMois=(state.allTransactions||[]).filter(t=>t.created_at&&t.created_at.slice(0,7)===moisActuel&&t.type==='earn');
+  const ptsDist=txMois.reduce((s,t)=>s+(t.points||0),0);
+  const statsCaissiers={};
+  txMois.forEach(t=>{
+    if(t.caissier_nom){
+      if(!statsCaissiers[t.caissier_nom])statsCaissiers[t.caissier_nom]={tx:0,pts:0};
+      statsCaissiers[t.caissier_nom].tx++;statsCaissiers[t.caissier_nom].pts+=t.points||0;
+    }
+  });
+  const nvClients=(state.allClients||[]).filter(c=>c.created_at&&c.created_at.slice(0,7)===moisActuel).length;
+  await sb.from('stats_mensuelles').upsert({mois:moisActuel,points_distribues:ptsDist,nb_transactions:txMois.length,nb_nouveaux_clients:nvClients,stats_caissiers:statsCaissiers},{onConflict:'mois'});
+  showToast('✅ Stats archivées et compteur remis à zéro !','#8fc98a');
+  await loadPatronData();render();
 }
 async function deleteCaissier(id){
   await sb.from('caissiers').update({actif:false}).eq('id',id);

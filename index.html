@@ -1017,21 +1017,25 @@ function printQR(){
   win.document.close();win.print();
 }
 function printPatronQR(){
-  const div=document.getElementById('patron-qr');
-  const canvas=div?.querySelector('canvas');
-  if(!canvas)return;
+  const url=window.location.origin+'/client';
+  const qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(url);
   const win=window.open('','_blank');
   win.document.write(`<html><head><title>QR Code Fidélité</title>
-    <style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif}
-    .card{border:2px solid #c8956c;border-radius:16px;padding:28px;text-align:center;width:300px}</style></head>
+    <style>
+      body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif;background:#fff}
+      .card{border:2px solid #c8956c;border-radius:16px;padding:28px;text-align:center;width:300px}
+      @media print{body{margin:0}.card{border:2px solid #c8956c}}
+    </style></head>
     <body><div class="card">
-    <div style="font-size:18px;font-weight:bold;color:#1a1410;margin-bottom:6px">${SHOP_NAME}</div>
-    <div style="font-size:11px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Programme Fidélité</div>
-    <img src="${canvas.toDataURL()}" width="180" height="180">
-    <div style="font-size:15px;font-weight:bold;margin-top:16px;color:#1a1410">Scannez pour accéder<br>à votre carte fidélité</div>
-    <div style="font-size:11px;color:#aaa;margin-top:8px">C'est gratuit et sans téléchargement</div>
-    </div></body></html>`);
-  win.document.close();win.print();
+      <div style="font-size:18px;font-weight:bold;color:#1a1410;margin-bottom:6px">${SHOP_NAME}</div>
+      <div style="font-size:11px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Programme Fidélité</div>
+      <img src="${qrUrl}" width="200" height="200" style="border-radius:8px">
+      <div style="font-size:15px;font-weight:bold;margin-top:16px;color:#1a1410">Scannez pour accéder<br>à votre carte fidélité</div>
+      <div style="font-size:11px;color:#aaa;margin-top:8px">Gratuit · Sans téléchargement</div>
+    </div>
+    <script>window.onload=function(){window.print()}<\/script>
+    </body></html>`);
+  win.document.close();
 }
   function showToast(msg,color='#8fc98a'){
   state.toast={msg,color};render();

@@ -904,10 +904,36 @@ async function deleteClient(id,nom){
 }
 async function deleteTx(txId){
   if(!confirm('Supprimer cette transaction ?'))return;
+
+  // Recalculer les points produits depuis toutes les transactions restantes
   await sb.from('transactions').delete().eq('id',txId);
+
+  // Recalcul points globaux
   const {data:txs}=await sb.from('transactions').select('points').eq('client_id',state.selectedClient.id);
   const newPts=Math.max(0,(txs||[]).reduce((s,t)=>s+(t.points||0),0));
   await sb.from('clients').update({points:newPts}).eq('id',state.selectedClient.id);
+
+  // Recalcul points par produit depuis l'historique restant
+  const {data:allTxs}=await sb.from('transactions').select('label,points,type').eq('client_id',state.selectedClient.id);
+  const newProdPts={};
+  state.products.forEach(p=>{newProdPts[p.id]=0;});
+  (allTxs||[]).forEach(tx=>{
+    if(tx.type==='earn'){
+      state.products.forEach(p=>{
+        // Compter les occurrences du produit dans le label
+        const regex=new RegExp(`(\\d+)× ${p.nom}`);
+        const match=tx.label.match(regex);
+        if(match) newProdPts[p.id]=(newProdPts[p.id]||0)+parseInt(match[1]);
+      });
+    }
+  });
+  // Appliquer le modulo seuil pour chaque produit
+  for(const p of state.products){
+    const total=newProdPts[p.id]||0;
+    const remaining=total%p.seuil;
+    await upsertClientPoints(state.selectedClient.id,p.id,remaining);
+  }
+
   showToast('🗑️ Transaction supprimée','#e87070');
   await selectPatronClient(state.selectedClient.id,state.selectedClient);
 }

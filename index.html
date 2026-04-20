@@ -828,7 +828,28 @@ function renderPatronClientDetail(){
   return`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <button class="back-btn" style="margin-bottom:0" onclick="state.selectedClient=null;render()">← Retour</button>
-      <button onclick="deleteClient('${c.id}','${c.nom}')" style="background:rgba(232,112,112,.1);border:1px solid rgba(232,112,112,.3);color:#e87070;border-radius:10px;padding:8px 14px;font-size:12px;cursor:pointer">🗑️ Supprimer</button>
+      <div style="display:flex;gap:8px">
+  <button onclick="showAjustPoints('${c.id}')" style="background:rgba(200,149,108,.1);border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:10px;padding:8px 14px;font-size:12px;cursor:pointer">✏️ Ajuster points</button>
+  <button onclick="deleteClient('${c.id}','${c.nom}')" style="background:rgba(232,112,112,.1);border:1px solid rgba(232,112,112,.3);color:#e87070;border-radius:10px;padding:8px 14px;font-size:12px;cursor:pointer">🗑️ Supprimer</button>
+</div>
+<div id="ajust-points-form" style="display:none;background:#111;border:1px solid rgba(200,149,108,.3);border-radius:14px;padding:16px;margin-top:12px;margin-bottom:4px">
+  <div class="section-title" style="margin-bottom:12px">Ajuster les points du client</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+    ${state.products.map(p=>`
+      <div>
+        <div style="font-size:11px;color:#666;margin-bottom:4px">${p.icon} ${p.nom} (actuel: ${state.selectedClientPoints[p.id]||0}/${p.seuil})</div>
+        <input class="input-sm" type="number" id="ajust-${p.id}" min="0" max="${p.seuil-1}" placeholder="0" value="${state.selectedClientPoints[p.id]||0}">
+      </div>`).join('')}
+  </div>
+  <div style="margin-bottom:10px">
+    <div style="font-size:11px;color:#666;margin-bottom:4px">⭐ Points globaux (actuel: ${c.points})</div>
+    <input class="input-sm" type="number" id="ajust-global" min="0" placeholder="${c.points}" value="${c.points}">
+  </div>
+  <div style="display:flex;gap:8px">
+    <button onclick="saveAjustPoints('${c.id}')" style="flex:1;background:#7ec87e;border:none;color:#0a0a0a;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">✓ Enregistrer</button>
+    <button onclick="document.getElementById('ajust-points-form').style.display='none'" style="flex:1;background:#1a1a1a;border:1px solid #2a2a2a;color:#666;border-radius:10px;padding:10px;font-size:13px;cursor:pointer">Annuler</button>
+  </div>
+</div>
     </div>
     <div style="background:#111;border:1px solid ${level.color}33;border-radius:16px;padding:16px;margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
@@ -901,6 +922,31 @@ async function deleteClient(id,nom){
   await sb.from('clients').delete().eq('id',id);
   state.selectedClient=null;
   showToast(`🗑️ ${nom} supprimé`,'#e87070');await loadPatronData();render();
+}
+  function showAjustPoints(id){
+  const f=document.getElementById('ajust-points-form');
+  if(f)f.style.display=f.style.display==='none'?'block':'none';
+}
+
+async function saveAjustPoints(clientId){
+  const globalPts=parseInt(document.getElementById('ajust-global')?.value)||0;
+  for(const p of state.products){
+    const val=parseInt(document.getElementById(`ajust-${p.id}`)?.value)||0;
+    const clamped=Math.min(val,p.seuil-1);
+    await upsertClientPoints(clientId,p.id,clamped);
+    state.selectedClientPoints[p.id]=clamped;
+  }
+  await sb.from('clients').update({points:globalPts}).eq('id',clientId);
+  await sb.from('transactions').insert({
+    client_id:clientId,
+    label:`✏️ Ajustement manuel par le patron`,
+    points:0,
+    type:'bonus',
+    caissier_nom:'Patron'
+  });
+  showToast('✅ Points ajustés !','#8fc98a');
+  document.getElementById('ajust-points-form').style.display='none';
+  await selectPatronClient(clientId,state.selectedClient);
 }
 async function deleteTx(txId){
   if(!confirm('Supprimer cette transaction ?'))return;

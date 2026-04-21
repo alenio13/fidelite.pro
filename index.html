@@ -942,7 +942,7 @@ async function addProduit(){
   if(!nom||!prix)return showToast('Remplissez nom et prix','#e87070');
   const ordre=(state.products.length||0)+1;
   const {error}=await sb.from('produits').insert({nom,icon,prix,seuil,actif:true,ordre});
-  if(error)return showToast('Erreur lors de l'ajout','#e87070');
+  if(error)return showToast("Erreur lors de l'ajout",'#e87070');
   showToast(`✅ ${nom} ajouté !`,'#8fc98a');await loadProducts();render();
 }
 async function saveProduit(id){

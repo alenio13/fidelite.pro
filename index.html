@@ -317,8 +317,9 @@ function renderCashier(){
     <div style="font-size:13px;color:#555">Points mis à jour</div></div>`;
 
   const items=state.products.filter(p=>(state.cart[p.id]||0)>0);
-  const total=items.reduce((s,p)=>s+p.prix*(state.cart[p.id]||0),0);
-  const cartCount=Object.values(state.cart).reduce((s,v)=>s+v,0);
+const bonusItems=Object.values(state.cart).filter(v=>v&&v.isBonus);
+const total=items.reduce((s,p)=>s+p.prix*(state.cart[p.id]||0),0);
+  const cartCount=Object.values(state.cart).reduce((s,v)=>s+(v&&v.isBonus?1:v||0),0);
   if(state.step==='summary')return renderSummary(items,total);
 
   return`

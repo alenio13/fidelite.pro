@@ -123,6 +123,9 @@ let state={
   scanning:false,toast:null,
   caissiers:[],allTransactions:[],allClients:[],
   editingProduct:null,
+  recompensesNiveaux:[],
+  bonusPoints:[],
+  editingRecompense:null,
 };
 
 // ── PRODUITS ──────────────────────────────────────────────────────────────────
@@ -276,7 +279,16 @@ async function loginCaissier(){
   const code=document.getElementById('caissier-code').value.trim();
   if(!code)return;
   const {data}=await sb.from('caissiers').select('*').eq('code',code).eq('actif',true).single();
-  if(data){state.role='caissier';state.caissierActif=data;state.view='cashier';await loadProducts();render();}
+  if(data){
+    state.role='caissier';state.caissierActif=data;state.view='cashier';
+    await loadProducts();
+    const [{data:rn},{data:bp}]=await Promise.all([
+      sb.from('recompenses_niveaux').select('*').eq('actif',true),
+      sb.from('bonus_points').select('*').eq('actif',true).order('ordre'),
+    ]);
+    state.recompensesNiveaux=rn||[];state.bonusPoints=bp||[];
+    render();
+  }
   else showToast('Code invalide ou désactivé','#e87070');
 }
 async function loginClient(){
@@ -329,6 +341,35 @@ function renderCashier(){
       }).join('')}
     </div>
 
+    ${state.bonusPoints&&state.bonusPoints.length>0?`
+    <div class="section-title">Bonus points</div>
+    <div class="product-grid" style="margin-bottom:18px">
+      ${(state.bonusPoints||[]).map(b=>`
+        <button class="product-btn ${state.cart['bonus_'+b.id]?'selected':''}" onclick="addBonus('${b.id}','${b.nom}',${b.points})">
+          <div style="font-size:22px;margin-bottom:4px">${b.icon}</div>
+          <div style="font-size:13px;color:#e0ddd8;font-weight:500;margin-bottom:6px">${b.nom}</div>
+          <div style="display:flex;justify-content:center">
+            <span style="background:rgba(126,200,126,.15);color:#7ec87e;border:1px solid rgba(126,200,126,.3);border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">+${b.points} pts</span>
+          </div>
+          ${state.cart['bonus_'+b.id]?`<div class="qty-badge">✓</div>`:''}
+        </button>`).join('')}
+    </div>`:''}
+
+    ${state.client&&(state.recompensesNiveaux||[]).some(r=>state.client.points>=r.points_requis)?`
+    <div class="section-title">Récompenses disponibles</div>
+    <div style="margin-bottom:18px">
+      ${(state.recompensesNiveaux||[]).filter(r=>state.client.points>=r.points_requis).map(r=>`
+        <button onclick="utiliserRecompenseNiveau('${r.id}','${r.description}',${r.points_requis},'${r.niveau}')" style="width:100%;display:flex;justify-content:space-between;align-items:center;background:#0d1a0d;border:2px solid #7ec87e;border-radius:14px;padding:13px 16px;cursor:pointer;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px">🎁</span>
+            <div>
+              <div style="font-size:14px;color:#7ec87e;font-weight:700">${r.description}</div>
+              <div style="font-size:11px;color:#555">Niveau ${r.niveau} · −${r.points_requis} pts</div>
+            </div>
+          </div>
+          <span style="font-size:12px;color:#7ec87e;font-weight:700">Offrir →</span>
+        </button>`).join('')}
+    </div>`:''}
     <div class="section-title">Colis</div>
     <div class="colis-btns">
       <button class="colis-btn" onclick="addColis('déposé')" ${state.colisToday||!state.client?'disabled':''} style="${state.colisToday||!state.client?'opacity:.4;cursor:not-allowed':''}">
@@ -531,7 +572,19 @@ async function handlePay(){
   }
 
   // 1 seule ligne pour tout le passage
-  const label=items.map(p=>`${state.cart[p.id]}× ${p.nom}`).join(' · ');
+  const bonusItems=Object.values(state.cart).filter(v=>v&&v.isBonus);
+const bonusPts=bonusItems.reduce((s,b)=>s+b.points,0);
+if(bonusItems.length>0){
+    const newPtsBonus=(state.client.points||0)+bonusPts;
+    await sb.from('clients').update({points:newPtsBonus}).eq('id',state.client.id);
+    for(const b of bonusItems){
+      await sb.from('transactions').insert({client_id:state.client.id,label:`⭐ ${b.nom}`,points:b.points,type:'bonus',caissier_nom:caissierNom});
+    }
+    state.client.points=newPtsBonus;
+    globalPts+=bonusPts;
+  }
+  const productItems=items.filter(p=>!p.isBonus);
+  const label=productItems.map(p=>`${state.cart[p.id]}× ${p.nom}`).join(' · ');
   await sb.from('transactions').insert({client_id:state.client.id,label,points:globalPts,type:'earn',caissier_nom:caissierNom});
   const newTotal=(state.client.points||0)+globalPts;
   await sb.from('clients').update({points:newTotal}).eq('id',state.client.id);
@@ -666,15 +719,16 @@ function renderClientHistory(){return`
 // ── PATRON ────────────────────────────────────────────────────────────────────
 async function loadPatronData(){
   const moisActuel=new Date().toISOString().slice(0,7);
-  const [{data:c},{data:t},{data:cl},{data:sm}]=await Promise.all([
+ const [{data:c},{data:t},{data:cl},{data:sm},{data:rn},{data:bp}]=await Promise.all([
     sb.from('caissiers').select('*').order('created_at',{ascending:false}),
     sb.from('transactions').select('*').order('created_at',{ascending:false}).limit(100),
     sb.from('clients').select('*').order('created_at',{ascending:false}),
     sb.from('stats_mensuelles').select('*').order('mois',{ascending:false}).limit(12),
+    sb.from('recompenses_niveaux').select('*').order('points_requis'),
+    sb.from('bonus_points').select('*').eq('actif',true).order('ordre'),
   ]);
   state.caissiers=c||[];state.allTransactions=t||[];state.allClients=cl||[];
-  state.statsMensuelles=sm||[];
-
+  state.statsMensuelles=sm||[];state.recompensesNiveaux=rn||[];state.bonusPoints=bp||[];
   // Archivage automatique le 1er du mois
   await archivageAuto(moisActuel);
   await loadProducts();
@@ -728,7 +782,7 @@ async function selectPatronClient(clientId,clientObj){
 
 function renderPatron(){
   if(state.selectedClient)return renderPatronClientDetail();
-  const PTABS=[{id:'stats',l:'📊 Stats'},{id:'produits',l:'🛍️ Produits'},{id:'clients',l:'👥 Clients'},{id:'caissiers',l:'🏪 Caissiers'},{id:'activite',l:'📋 Activité'}];
+  const PTABS=[{id:'stats',l:'📊 Stats'},{id:'produits',l:'🛍️ Produits'},{id:'recompenses',l:'🎁 Récomp.'},{id:'clients',l:'👥 Clients'},{id:'caissiers',l:'🏪 Caissiers'},{id:'activite',l:'📋 Activité'}];
   const txEarn=state.allTransactions.filter(t=>t.type==='earn');
   const totalPts=txEarn.reduce((s,t)=>s+(t.points||0),0);
   const statsCaissier={};
@@ -800,6 +854,7 @@ function renderPatron(){
       ${Object.keys(statsCaissier).length===0?`<div class="empty">Aucune activité</div>`:Object.entries(statsCaissier).map(([nom,s])=>`
         <div class="caissier-row"><div><div style="font-size:14px;color:#ddd;font-weight:600">${nom}</div><div style="font-size:12px;color:#555;margin-top:2px">${s.tx} transaction${s.tx>1?'s':''}</div></div><div style="font-size:14px;color:#c8956c;font-weight:700">+${s.pts} pts</div></div>`).join('')}`:''}
     ${state.patronTab==='produits'?renderPatronProduits():''}
+    ${state.patronTab==='recompenses'?renderPatronRecompenses():''}
     ${state.patronTab==='clients'?`
       <input class="input" type="text" placeholder="🔍 Rechercher..." oninput="state.clientSearch=this.value;render()" value="${state.clientSearch}" style="margin-bottom:12px">
       <div style="font-size:12px;color:#555;margin-bottom:12px">${filtered.length} client${filtered.length>1?'s':''}</div>
@@ -905,7 +960,90 @@ async function deleteProduit(id,nom){
   await sb.from('produits').update({actif:false}).eq('id',id);
   showToast(`🗑️ ${nom} supprimé`,'#e87070');await loadProducts();render();
 }
+function renderPatronRecompenses(){
+  return`
+    <!-- Récompenses par niveau -->
+    <div class="section-title">Récompenses par niveau</div>
+    <div style="font-size:12px;color:#555;margin-bottom:14px;line-height:1.6">Définissez ce que le client reçoit quand il atteint chaque niveau. Le caissier pourra l'offrir en caisse.</div>
+    ${(state.recompensesNiveaux||[]).map(r=>`
+      <div style="background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:14px 16px;margin-bottom:10px">
+        ${state.editingRecompense===r.id?`
+          <div style="font-size:12px;color:#c8956c;font-weight:700;margin-bottom:10px">Niveau ${r.niveau}</div>
+          <input class="input" id="edit-rec-desc-${r.id}" value="${r.description}" placeholder="Description (ex: Café offert)">
+          <div style="font-size:11px;color:#555;margin-bottom:6px">Points déduits quand utilisée</div>
+          <input class="input" type="number" id="edit-rec-pts-${r.id}" value="${r.points_requis}" placeholder="500" style="margin-bottom:10px">
+          <div style="display:flex;gap:8px">
+            <button onclick="saveRecompense('${r.id}')" style="flex:1;background:#7ec87e;border:none;color:#0a0a0a;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">✓ Enregistrer</button>
+            <button onclick="state.editingRecompense=null;render()" style="flex:1;background:#1a1a1a;border:1px solid #2a2a2a;color:#666;border-radius:10px;padding:10px;font-size:13px;cursor:pointer">Annuler</button>
+          </div>`:`
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:20px">🎁</span>
+              <div>
+                <div style="font-size:11px;color:#c8956c;font-weight:700">Niveau ${r.niveau} — ${r.points_requis} pts requis</div>
+                <div style="font-size:14px;color:#ddd;margin-top:2px">${r.description}</div>
+              </div>
+            </div>
+            <button onclick="state.editingRecompense='${r.id}';render()" style="background:rgba(200,149,108,.1);border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer">✏️</button>
+          </div>`}
+      </div>`).join('')}
 
+    <!-- Bonus points -->
+    <div class="section-title" style="margin-top:20px">Cases bonus points</div>
+    <div style="font-size:12px;color:#555;margin-bottom:14px;line-height:1.6">Créez des boutons spéciaux en caisse qui ajoutent des points globaux au client.</div>
+    <div style="background:#111;border:1px solid rgba(249,208,86,.2);border-radius:16px;padding:16px;margin-bottom:16px">
+      <div class="section-title">Ajouter un bonus</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <input class="input-sm" id="bp-icon" placeholder="Icône (ex: 🍽️)">
+        <input class="input-sm" id="bp-nom" placeholder="Nom (ex: Formule midi)">
+      </div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:10px;color:#555;margin-bottom:4px">POINTS ACCORDÉS</div>
+        <input class="input-sm" id="bp-points" type="number" placeholder="10">
+      </div>
+      <button onclick="addBonusPoint()" style="width:100%;background:rgba(249,208,86,.15);border:1px solid rgba(249,208,86,.3);color:#f9d056;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">+ Ajouter</button>
+    </div>
+    ${(state.bonusPoints||[]).map(b=>`
+      <div style="background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">${b.icon}</span>
+          <div>
+            <div style="font-size:14px;color:#ddd;font-weight:600">${b.nom}</div>
+            <div style="font-size:12px;color:#7ec87e;margin-top:2px">+${b.points} pts globaux</div>
+          </div>
+        </div>
+        <button onclick="deleteBonusPoint('${b.id}','${b.nom}')" style="background:rgba(232,112,112,.1);border:1px solid rgba(232,112,112,.3);color:#e87070;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer">🗑️</button>
+      </div>`).join('')}
+    ${(state.bonusPoints||[]).length===0?`<div class="empty">Aucun bonus créé</div>`:''}`;
+}
+
+async function saveRecompense(id){
+  const desc=document.getElementById(`edit-rec-desc-${id}`)?.value?.trim();
+  const pts=parseInt(document.getElementById(`edit-rec-pts-${id}`)?.value)||500;
+  if(!desc)return showToast('Remplissez la description','#e87070');
+  await sb.from('recompenses_niveaux').update({description:desc,points_requis:pts}).eq('id',id);
+  state.editingRecompense=null;
+  showToast('✅ Récompense modifiée !','#8fc98a');
+  await loadPatronData();render();
+}
+
+async function addBonusPoint(){
+  const icon=document.getElementById('bp-icon')?.value?.trim()||'⭐';
+  const nom=document.getElementById('bp-nom')?.value?.trim();
+  const points=parseInt(document.getElementById('bp-points')?.value)||10;
+  if(!nom)return showToast('Remplissez le nom','#e87070');
+  const ordre=(state.bonusPoints||[]).length+1;
+  await sb.from('bonus_points').insert({nom,icon,points,actif:true,ordre});
+  showToast(`✅ ${nom} ajouté !`,'#8fc98a');
+  await loadPatronData();render();
+}
+
+async function deleteBonusPoint(id,nom){
+  if(!confirm(`Supprimer "${nom}" ?`))return;
+  await sb.from('bonus_points').delete().eq('id',id);
+  showToast(`🗑️ ${nom} supprimé`,'#e87070');
+  await loadPatronData();render();
+}
 function renderPatronClientDetail(){
   const c=state.selectedClient;
   const level=getLevel(c.points);
@@ -1088,7 +1226,7 @@ async function deleteTx(txId){
     const remaining=total%p.seuil;
     await upsertClientPoints(state.selectedClient.id,p.id,remaining);
   }
-
+  
   showToast('🗑️ Transaction supprimée','#e87070');
   await selectPatronClient(state.selectedClient.id,state.selectedClient);
 }
@@ -1133,6 +1271,30 @@ function printPatronQR(){
     <script>window.onload=function(){window.print()}<\/script>
     </body></html>`);
   win.document.close();
+}
+  function addBonus(id,nom,points){
+  const key='bonus_'+id;
+  if(state.cart[key]){delete state.cart[key];}
+  else{state.cart[key]={id,nom,points,isBonus:true};}
+  render();
+}
+async function utiliserRecompenseNiveau(id,description,pointsRequis,niveau){
+  if(!state.client)return;
+  if(state.client.points<pointsRequis)return showToast('Pas assez de points','#e87070');
+  if(!confirm(`Offrir "${description}" et déduire ${pointsRequis} pts ?`))return;
+  const newPts=state.client.points-pointsRequis;
+  await sb.from('clients').update({points:newPts}).eq('id',state.client.id);
+  const caissierNom=state.caissierActif?state.caissierActif.nom:null;
+  await sb.from('transactions').insert({
+    client_id:state.client.id,
+    label:`🎁 Récompense ${niveau} — ${description}`,
+    points:-pointsRequis,
+    type:'redeem',
+    caissier_nom:caissierNom
+  });
+  state.client.points=newPts;
+  showToast(`🎉 ${description} offert !`,'#7ec87e');
+  render();
 }
   function showToast(msg,color='#8fc98a'){
   state.toast={msg,color};render();

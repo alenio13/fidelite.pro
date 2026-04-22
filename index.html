@@ -535,7 +535,7 @@ async function addColis(type){
   state.clientPoints[randProd.id]=newVal;
   state.colisToday=true;
   const caissierNom=state.caissierActif?state.caissierActif.nom:null;
-  const txLabel=`📦 Colis ${type} → +1 pt bonus ${randProd.icon}`;
+  const txLabel='Colis '+type+' +1 pt bonus '+randProd.icon;
   await sb.from('transactions').insert({client_id:state.client.id,label:txLabel,points:1,type:'earn',caissier_nom:caissierNom});
   state.lastColisData={produitId:randProd.id,valBefore:before,txLabel};
   showToast(`📦 Colis ${type} · +1 pt ${randProd.icon}`,'#7eb8d4');

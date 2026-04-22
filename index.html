@@ -636,7 +636,7 @@ function renderClient(){
   const c=state.client;
   const level=getLevel(c.points);
   const nextLevel=LEVELS[LEVELS.indexOf(level)+1];
-  return`
+  return;
     <div class="tabs">
       ${[{id:'card',l:'🎴 Carte'},{id:'jauges',l:'📊 Points'},{id:'history',l:'📋 Historique'}].map(t=>
         `<button class="tab ${state.clientTab===t.id?'active':''}" style="${state.clientTab===t.id?`color:${level.color};border-color:${level.color}44`:''}" onclick="state.clientTab='${t.id}';render()">${t.l}</button>`

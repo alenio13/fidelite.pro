@@ -542,7 +542,7 @@ async function addColis(type){
   const cancelDiv=document.createElement('div');
   cancelDiv.id='cancel-colis';
   cancelDiv.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;border:1px solid rgba(232,112,112,.4);border-radius:14px;padding:12px 20px;display:flex;gap:12px;align-items:center;z-index:998;box-shadow:0 8px 30px rgba(0,0,0,.6)';
-  cancelDiv.innerHTML=`<span style="font-size:13px;color:#7eb8d4">📦 Colis enregistré</span><button onclick="cancelColis()" style="background:rgba(232,112,112,.15);border:1px solid rgba(232,112,112,.4);color:#e87070;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer">↩️ Annuler</button>`;
+  cancelDiv.innerHTML='<span style="font-size:13px;color:#7eb8d4">📦 Colis enregistré</span><button onclick="cancelColis()" style="background:rgba(232,112,112,.15);border:1px solid rgba(232,112,112,.4);color:#e87070;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer">↩️ Annuler</button>';
   document.body.appendChild(cancelDiv);
   setTimeout(()=>{const d=document.getElementById('cancel-colis');if(d)d.remove();},10000);
   render();

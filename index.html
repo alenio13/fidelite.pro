@@ -453,6 +453,14 @@ function renderSummary(items,total){
 
   return`
     <button class="back-btn" onclick="state.step='catalog';render()">← Modifier la commande</button>
+    ${Object.values(state.cart).filter(v=>v&&v.isBonus).map(b=>`
+  <div style="background:#0d1a0d;border:1px solid #1a2e1a;border-radius:12px;padding:12px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">⭐</span>
+      <span style="font-size:14px;color:#7ec87e;font-weight:600">${b.nom}</span>
+    </div>
+    <span style="font-size:14px;color:#7ec87e;font-weight:700">+${b.points} pts</span>
+  </div>`).join('')}
     ${rewards.map(r=>`
       <div class="reward-alert">
         <div style="font-size:13px;color:#7ec87e;font-weight:700;margin-bottom:4px">🎉 Récompense débloquée !</div>
@@ -573,22 +581,15 @@ async function handlePay(){
   }
 
   // 1 seule ligne pour tout le passage
-  const bonusItems=Object.values(state.cart).filter(v=>v&&v.isBonus);
+ const bonusItems=Object.values(state.cart).filter(v=>v&&v.isBonus);
 const bonusPts=bonusItems.reduce((s,b)=>s+b.points,0);
-if(bonusItems.length>0){
-    const newPtsBonus=(state.client.points||0)+bonusPts;
-    await sb.from('clients').update({points:newPtsBonus}).eq('id',state.client.id);
-    for(const b of bonusItems){
-      await sb.from('transactions').insert({client_id:state.client.id,label:`⭐ ${b.nom}`,points:b.points,type:'bonus',caissier_nom:caissierNom});
-    }
-    state.client.points=newPtsBonus;
-    globalPts+=bonusPts;
-  }
-  const productItems=items.filter(p=>!p.isBonus);
-  const label=productItems.map(p=>`${state.cart[p.id]}× ${p.nom}`).join(' · ');
+const label=items.map(p=>`${state.cart[p.id]}× ${p.nom}`).join(' · ');
   await sb.from('transactions').insert({client_id:state.client.id,label,points:globalPts,type:'earn',caissier_nom:caissierNom});
-  const newTotal=(state.client.points||0)+globalPts;
+  const newTotal=(state.client.points||0)+globalPts+bonusPts;
   await sb.from('clients').update({points:newTotal}).eq('id',state.client.id);
+  for(const b of bonusItems){
+    await sb.from('transactions').insert({client_id:state.client.id,label:`⭐ ${b.nom}`,points:b.points,type:'bonus',caissier_nom:caissierNom});
+  }
   state.client.points=newTotal;
 
   state.cart={};state.step='done';

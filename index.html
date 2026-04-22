@@ -614,7 +614,7 @@ async function createClient(){
   if(!pin||pin.length!==4)return showToast('PIN doit faire 4 chiffres','#e87070');
   const {data,error}=await sb.from('clients').insert({nom,telephone:tel,points:0,pin}).select().single();
   if(error)return showToast('Numéro déjà utilisé','#e87070');
-  await loadClient(data);showToast(`✅ ${nom} inscrit !`,'#8fc98a');render();
+  await loadClient(data);showToast('✅ ${nom} inscrit !','#8fc98a');render();
 }
 async function updatePIN(){
   const pin=document.getElementById('new-pin-client')?.value?.trim();

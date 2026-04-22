@@ -441,6 +441,7 @@ function renderClientSearch(){
 }
 
 function renderSummary(items,total){
+  const bonusOnly=items.length===0&&Object.values(state.cart).some(v=>v&&v.isBonus);
   // Calculer récompenses
   const rewards=[];
   items.forEach(p=>{
@@ -510,7 +511,7 @@ function renderSummary(items,total){
         <span style="font-size:20px;font-weight:700;color:#c8956c">${total.toFixed(2)} €</span>
       </div>
     </div>
-    <button class="pay-btn" onclick="handlePay()">💳 Encaisser · ${total.toFixed(2)} €</button>`;
+    <button class="pay-btn" onclick="handlePay()">${bonusOnly?'✅ Valider les bonus':'💳 Encaisser · '+total.toFixed(2)+' €'}</button>
 }
 
 // ── ACTIONS CAISSE ────────────────────────────────────────────────────────────
@@ -561,7 +562,8 @@ async function cancelColis(){
 
 async function handlePay(){
   const items=state.products.filter(p=>(state.cart[p.id]||0)>0);
-  if(!items.length)return;
+  const bonusItems=Object.values(state.cart).filter(v=>v&&v.isBonus);
+  if(!items.length&&!bonusItems.length)return;
   if(!state.client)return showToast('Identifiez le client avant d\'encaisser','#e87070');
   const caissierNom=state.caissierActif?state.caissierActif.nom:null;
   let globalPts=0;

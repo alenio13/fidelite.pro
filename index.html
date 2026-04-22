@@ -590,7 +590,7 @@ const label=items.map(p=>'${state.cart[p.id]}× ${p.nom}').join(' · ');
   const newTotal=(state.client.points||0)+globalPts+bonusPts;
   await sb.from('clients').update({points:newTotal}).eq('id',state.client.id);
   for(const b of bonusItems){
-    await sb.from('transactions').insert({client_id:state.client.id,label:`⭐ ${b.nom}`,points:b.points,type:'bonus',caissier_nom:caissierNom});
+    await sb.from('transactions').insert({client_id:state.client.id,label:'⭐ ${b.nom}',points:b.points,type:'bonus',caissier_nom:caissierNom});
   }
   state.client.points=newTotal;
 

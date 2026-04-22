@@ -535,10 +535,10 @@ async function addColis(type){
   state.clientPoints[randProd.id]=newVal;
   state.colisToday=true;
   const caissierNom=state.caissierActif?state.caissierActif.nom:null;
-  const txLabel=`📦 Colis ${type} → +1 pt bonus ${randProd.icon}`;
+  const txLabel=`📦 Colis ${Type} → +1 pt bonus ${randProd.icon}`;
   await sb.from('transactions').insert({client_id:state.client.id,label:txLabel,points:1,type:'earn',caissier_nom:caissierNom});
   state.lastColisData={produitId:randProd.id,valBefore:before,txLabel};
-  showToast(`📦 Colis ${type} · +1 pt ${randProd.icon}`,'#7eb8d4');
+  showToast(`📦 Colis ${Type} · +1 pt ${randProd.icon}`,'#7eb8d4');
   const cancelDiv=document.createElement('div');
   cancelDiv.id='cancel-colis';
   cancelDiv.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;border:1px solid rgba(232,112,112,.4);border-radius:14px;padding:12px 20px;display:flex;gap:12px;align-items:center;z-index:998;box-shadow:0 8px 30px rgba(0,0,0,.6)';

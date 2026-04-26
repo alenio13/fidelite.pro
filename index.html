@@ -497,6 +497,7 @@ const bonusPtsVip=vipBonus?Math.round((totalPourVip*c.vip_bonus/100)*10)/10:0;
 
   bonusItems.forEach(b=>{
     const qty=b.qty||1;
+    console.log('prixUnitaire:',b.prixUnitaire,'qty:',qty);
     const prixTotal=(b.prixUnitaire||0)*qty;
     html+='<div style="background:#0d1a0d;border:1px solid #1a2e1a;border-radius:12px;padding:12px 16px;margin-bottom:10px">'+
       '<div style="display:flex;justify-content:space-between;align-items:center">'+
@@ -540,7 +541,8 @@ function toggleBonus(id,nom,points){
   const key='bonus_'+id;
   if(state.cart[key]){
     state.cart[key].qty=(state.cart[key].qty||1)+1;
-    state.cart[key].points=points*(state.cart[key].qty);
+state.cart[key].points=points*(state.cart[key].qty);
+state.cart[key].prixUnitaire=parseFloat(state.bonusPoints.find(b=>b.id===id)?.prix)||0;
   } else {
     const bonusProduit=state.bonusPoints.find(b=>b.id===id); 
     console.log('bonus prix:', bonusProduit?.prix);

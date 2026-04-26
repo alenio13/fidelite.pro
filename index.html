@@ -668,9 +668,6 @@ if(vipBonusPts>0){
 for(const b of bonusCartItems){
   await sb.from('transactions').insert({client_id:state.client.id,label:'⭐ '+b.nom,points:b.points,type:'bonus',caissier_nom:caissierNom});
 }
-  for(const b of bonusCartItems){
-    await sb.from('transactions').insert({client_id:state.client.id,label:'⭐ '+b.nom,points:b.points,type:'bonus',caissier_nom:caissierNom});
-  }
 
   const newTotal=Math.round(((state.client.points||0)+globalPts+vipBonusPts+bonusPts)*10)/10;
   await sb.from('clients').update({points:newTotal}).eq('id',state.client.id);

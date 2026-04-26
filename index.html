@@ -323,7 +323,8 @@ function renderCashier(){
 
   const productItems=state.products.filter(p=>(state.cart[p.id]||0)>0);
   const bonusItems=Object.values(state.cart).filter(v=>v&&v.isBonus);
-  const total=productItems.reduce((s,p)=>s+p.prix*(state.cart[p.id]||0),0);
+  const total=productItems.reduce((s,p)=>s+p.prix*(state.cart[p.id]||0),0)+
+  Object.values(state.cart).filter(v=>v&&v.isBonus).reduce((s,b)=>s+(b.prix||0)*(b.qty||1),0);
   const cartCount=productItems.length+bonusItems.length;
 
   if(state.step==='summary')return renderSummary(productItems,bonusItems,total);
@@ -532,7 +533,8 @@ function toggleBonus(id,nom,points){
     state.cart[key].qty=(state.cart[key].qty||1)+1;
     state.cart[key].points=points*(state.cart[key].qty);
   } else {
-    state.cart[key]={id,nom,points,isBonus:true,qty:1};
+    const bonusProduit=state.bonusPoints.find(b=>b.id===id); 
+    state.cart[key]={id,nom,points,prix:bonusProduit?parseFloat(bonusProduit.prix)||0:0,isBonus:true,qty:1};
   }
   render();
 }

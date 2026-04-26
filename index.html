@@ -576,23 +576,31 @@ async function marquerRecompenseMensuelle(){
 async function utiliserRecompenseNiveau(id,description,pointsRequis,niveau){
   if(!state.client)return;
   if(!confirm('Offrir "'+description+'" au client ?'))return;
-  const currentIdx=LEVEL_ORDER.indexOf(niveau);
-  const nextNiveau=LEVEL_ORDER[currentIdx+1]||niveau;
-  // Pas de déduction de points — juste passage au niveau suivant
-  await sb.from('clients').update({
-    niveau_actuel:nextNiveau,
-    recompense_niveau_recup:false
-  }).eq('id',state.client.id);
   const caissierNom=state.caissierActif?state.caissierActif.nom:null;
-  await sb.from('transactions').insert({
-    client_id:state.client.id,
-    label:'🎁 Récompense '+niveau+' — '+description+' → Niveau '+nextNiveau+' débloqué',
-    points:0,
-    type:'bonus',
-    caissier_nom:caissierNom
-  });
-  state.client.niveau_actuel=nextNiveau;
-  showToast('🎉 '+description+' offert ! Niveau '+nextNiveau+' débloqué !','#7ec87e');
+  const currentIdx=LEVEL_ORDER.indexOf(niveau);
+  const nextNiveau=LEVEL_ORDER[currentIdx+1];
+
+  if(!nextNiveau){
+    // Platine = niveau max → remise à zéro du cycle
+    await sb.from('clients').update({
+      niveau_actuel:'Bronze',
+      recompense_niveau_recup:false,
+      points:0
+    }).eq('id',state.client.id);
+    state.client.niveau_actuel='Bronze';
+    state.client.points=0;
+    await sb.from('transactions').insert({client_id:state.client.id,label:'🎁 Récompense Platine — '+description+' · Cycle remis à zéro !',points:0,type:'redeem',caissier_nom:caissierNom});
+    showToast('🎉 Récompense Platine offerte ! Nouveau cycle !','#e0e0ff');
+  } else {
+    // Passage au niveau suivant
+    await sb.from('clients').update({
+      niveau_actuel:nextNiveau,
+      recompense_niveau_recup:false
+    }).eq('id',state.client.id);
+    state.client.niveau_actuel=nextNiveau;
+    await sb.from('transactions').insert({client_id:state.client.id,label:'🎁 Récompense '+niveau+' — '+description+' · Niveau '+nextNiveau+' débloqué !',points:0,type:'redeem',caissier_nom:caissierNom});
+    showToast('🎉 '+description+' offert ! Niveau '+nextNiveau+' débloqué !','#7ec87e');
+  }
   render();
 }
 

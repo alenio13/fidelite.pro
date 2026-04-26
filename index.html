@@ -641,9 +641,10 @@ async function handlePay(){
 
   // Bonus VIP sur points globaux
   const c=state.client;
-  const vipBonusPts=(c.vip&&c.vip_bonus>0)?Math.floor(globalPts*c.vip_bonus/100):0;
+  const totalAvantVip=globalPts+bonusPts;
+const vipBonusPts=(c.vip&&c.vip_bonus>0)?Math.round((totalAvantVip*c.vip_bonus/100)*10)/10:0;
   if(vipBonusPts>0){
-    await sb.from('transactions').insert({client_id:c.id,label:'★ Bonus VIP +'+c.vip_bonus+'% (+'+vipBonusPts+' pts)',points:vipBonusPts,type:'bonus',caissier_nom:caissierNom});
+    await sb.from('transactions').insert({client_id:c.id,label:'★ Bonus VIP +'+c.vip_bonus+'% (+'+vipBonusPts+' pts sur '+totalAvantVip+' pts)',points:vipBonusPts,type:'bonus',caissier_nom:caissierNom});
   }
 
   const bonusPts=bonusCartItems.reduce((s,b)=>s+b.points,0);
@@ -651,7 +652,7 @@ async function handlePay(){
     await sb.from('transactions').insert({client_id:state.client.id,label:'⭐ '+b.nom,points:b.points,type:'bonus',caissier_nom:caissierNom});
   }
 
-  const newTotal=(state.client.points||0)+globalPts+vipBonusPts+bonusPts;
+  const newTotal=Math.round(((state.client.points||0)+globalPts+vipBonusPts+bonusPts)*10)/10;
   await sb.from('clients').update({points:newTotal}).eq('id',state.client.id);
   state.client.points=newTotal;
 

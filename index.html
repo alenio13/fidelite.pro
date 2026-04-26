@@ -582,11 +582,17 @@ async function utiliserRecompenseNiveau(id,description,pointsRequis,niveau){
 
   if(!nextNiveau){
     // Platine = niveau max → remise à zéro du cycle
-    await sb.from('clients').update({
-      niveau_actuel:'Bronze',
-      recompense_niveau_recup:false,
-      points:0
-    }).eq('id',state.client.id);
+    // Supprimer toutes les transactions pour repartir à zéro
+await sb.from('transactions').delete().eq('client_id',state.client.id);
+await sb.from('points_produits').delete().eq('client_id',state.client.id);
+await sb.from('clients').update({
+  niveau_actuel:'Bronze',
+  recompense_niveau_recup:false,
+  points:0
+}).eq('id',state.client.id);
+state.client.points=0;
+state.transactions=[];
+state.clientPoints={};
     state.client.niveau_actuel='Bronze';
     state.client.points=0;
     await sb.from('transactions').insert({client_id:state.client.id,label:'🎁 Récompense Platine — '+description+' · Cycle remis à zéro !',points:0,type:'redeem',caissier_nom:caissierNom});

@@ -658,7 +658,6 @@ async function handlePay(){
     await sb.from('transactions').insert({client_id:state.client.id,label,points:globalPts,type:'earn',caissier_nom:caissierNom});
   }
 
-  const bonusCartItems=Object.values(state.cart).filter(v=>v&&v.isBonus);
 const bonusPts=bonusCartItems.reduce((s,b)=>s+(b.points||0),0);
 const c=state.client;
 const totalAvantVip=globalPts+bonusPts;

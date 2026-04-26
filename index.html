@@ -388,11 +388,11 @@ function renderCashier(){
     html+='<div class="section-title">Bonus points</div><div class="product-grid">';
     state.bonusPoints.forEach(b=>{
       const selected=!!state.cart['bonus_'+b.id];
-      html+='<button class="product-btn '+(selected?'selected':'')+'" onclick="toggleBonus(\''+b.id+'\',\''+b.nom.replace(/'/g,"\\'")+'\','+b.points+')" style="'+(selected?'border-color:rgba(126,200,126,.5)':'')+'">'+
+      html+='<button class="product-btn '+(selected?'selected':'')+'" onclick="addBonus(\''+b.id+'\',\''+b.nom.replace(/'/g,"\\'")+'\','+b.points+')"  style="'+(selected?'border-color:rgba(126,200,126,.5)':'')+'">'+
         '<div style="font-size:22px;margin-bottom:4px">'+b.icon+'</div>'+
         '<div style="font-size:13px;color:#e0ddd8;font-weight:500;margin-bottom:6px">'+b.nom+'</div>'+
         '<div style="display:flex;justify-content:center"><span style="background:rgba(126,200,126,.15);color:#7ec87e;border:1px solid rgba(126,200,126,.3);border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">+'+b.points+' pts</span></div>'+
-        (selected?'<div class="qty-badge" style="background:#7ec87e">✓</div>':'')+
+        (selected?'<div class="qty-badge" style="background:#7ec87e">'+(state.cart['bonus_'+b.id]?.qty||1)+'</div>':'')+
         '</button>';
     });
     html+='</div>';
@@ -512,7 +512,24 @@ function removeFromCart(id){state.cart[id]=Math.max(0,(state.cart[id]||0)-1);ren
 function toggleBonus(id,nom,points){
   const key='bonus_'+id;
   if(state.cart[key])delete state.cart[key];
-  else state.cart[key]={id,nom,points,isBonus:true};
+  else state.cart[key]={id,nom,points,isBonus:true,qty:1};
+  render();
+}
+  function addBonus(id,nom,points){
+  const key='bonus_'+id;
+  if(state.cart[key]){
+    state.cart[key].qty=(state.cart[key].qty||1)+1;
+    state.cart[key].points=points*(state.cart[key].qty);
+  } else {
+    state.cart[key]={id,nom,points,isBonus:true,qty:1};
+  }
+  render();
+}
+function removeBonus(id,points){
+  const key='bonus_'+id;
+  if(!state.cart[key])return;
+  if(state.cart[key].qty<=1)delete state.cart[key];
+  else{state.cart[key].qty--;state.cart[key].points=points*state.cart[key].qty;}
   render();
 }
 function clearClient(){state.client=null;state.transactions=[];state.clientPoints={};state.colisToday=false;render();}
@@ -642,12 +659,13 @@ async function handlePay(){
   // Bonus VIP sur points globaux
   const c=state.client;
   const totalAvantVip=globalPts+bonusPts;
-const vipBonusPts=(c.vip&&c.vip_bonus>0)?Math.round((totalAvantVip*c.vip_bonus/100)*10)/10:0;
   if(vipBonusPts>0){
     await sb.from('transactions').insert({client_id:c.id,label:'★ Bonus VIP +'+c.vip_bonus+'% (+'+vipBonusPts+' pts sur '+totalAvantVip+' pts)',points:vipBonusPts,type:'bonus',caissier_nom:caissierNom});
   }
 
-  const bonusPts=bonusCartItems.reduce((s,b)=>s+b.points,0);
+  const bonusPts=bonusCartItems.reduce((s,b)=>s+(b.points||0),0);
+const totalAvantVip=globalPts+bonusPts;
+const vipBonusPts=(c.vip&&c.vip_bonus>0)?Math.round((totalAvantVip*c.vip_bonus/100)*10)/10:0;
   for(const b of bonusCartItems){
     await sb.from('transactions').insert({client_id:state.client.id,label:'⭐ '+b.nom,points:b.points,type:'bonus',caissier_nom:caissierNom});
   }

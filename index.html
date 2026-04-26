@@ -392,7 +392,9 @@ function renderCashier(){
         '<div style="font-size:22px;margin-bottom:4px">'+b.icon+'</div>'+
         '<div style="font-size:13px;color:#e0ddd8;font-weight:500;margin-bottom:6px">'+b.nom+'</div>'+
         '<div style="display:flex;justify-content:center"><span style="background:rgba(126,200,126,.15);color:#7ec87e;border:1px solid rgba(126,200,126,.3);border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">+'+b.points+' pts</span></div>'+
-        (selected?'<div class="qty-badge" style="background:#7ec87e">'+(state.cart['bonus_'+b.id]?.qty||1)+'</div>':'')+
+        (selected?'<div style="position:absolute;top:6px;right:6px;display:flex;gap:4px;align-items:center">'+
+'<button onclick="event.stopPropagation();removeBonus(\''+b.id+'\','+b.points+')" style="background:rgba(232,112,112,.3);border:none;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>'+
+'<span style="background:#7ec87e;color:#0a0a0a;border-radius:50%;width:22px;height:22px;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center">'+(state.cart['bonus_'+b.id]?.qty||1)+'</span></div>':'')+
         '</button>';
     });
     html+='</div>';
@@ -656,14 +658,17 @@ async function handlePay(){
     await sb.from('transactions').insert({client_id:state.client.id,label,points:globalPts,type:'earn',caissier_nom:caissierNom});
   }
 
-  // Bonus VIP sur points globaux
-  const c=state.client;
-  const totalAvantVip=globalPts+bonusPts;
-  if(vipBonusPts>0){
-    await sb.from('transactions').insert({client_id:c.id,label:'★ Bonus VIP +'+c.vip_bonus+'% (+'+vipBonusPts+' pts sur '+totalAvantVip+' pts)',points:vipBonusPts,type:'bonus',caissier_nom:caissierNom});
-  }
-
+  const bonusCartItems=Object.values(state.cart).filter(v=>v&&v.isBonus);
+const bonusPts=bonusCartItems.reduce((s,b)=>s+(b.points||0),0);
+const c=state.client;
+const totalAvantVip=globalPts+bonusPts;
 const vipBonusPts=(c.vip&&c.vip_bonus>0)?Math.round((totalAvantVip*c.vip_bonus/100)*10)/10:0;
+if(vipBonusPts>0){
+  await sb.from('transactions').insert({client_id:c.id,label:'★ Bonus VIP +'+c.vip_bonus+'% (+'+vipBonusPts+' pts sur '+totalAvantVip+' pts)',points:vipBonusPts,type:'bonus',caissier_nom:caissierNom});
+}
+for(const b of bonusCartItems){
+  await sb.from('transactions').insert({client_id:state.client.id,label:'⭐ '+b.nom,points:b.points,type:'bonus',caissier_nom:caissierNom});
+}
   for(const b of bonusCartItems){
     await sb.from('transactions').insert({client_id:state.client.id,label:'⭐ '+b.nom,points:b.points,type:'bonus',caissier_nom:caissierNom});
   }

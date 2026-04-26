@@ -1301,9 +1301,12 @@ function printQR(){
   win.document.write('<html><head><title>Carte — '+state.client.nom+'</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif}.card{border:2px solid #c8956c;border-radius:16px;padding:24px;text-align:center;width:280px}</style></head><body><div class="card"><div style="font-size:16px;font-weight:bold;color:#1a1410;margin-bottom:4px">'+SHOP_NAME+'</div><div style="font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Carte Fidélité</div><img src="'+canvas.toDataURL()+'" width="160" height="160"><div style="font-size:16px;font-weight:bold;margin-top:12px">'+state.client.nom+'</div><div style="font-size:11px;color:#aaa;margin-top:6px">Présentez ce QR code en caisse</div></div></body></html>');
   win.document.close();win.print();
 }
-    async function marquerAnniversaire(){
+ async function marquerAnniversaire(){
   if(!state.client)return;
   const caissierNom=state.caissierActif?state.caissierActif.nom:null;
+  const anneeActuelle=new Date().getFullYear();
+  // Stocker l'année où la récompense a été donnée
+  await sb.from('clients').update({anniversaire_offert:anneeActuelle}).eq('id',state.client.id);
   await sb.from('transactions').insert({
     client_id:state.client.id,
     label:'🎂 Récompense anniversaire offerte',
@@ -1311,8 +1314,7 @@ function printQR(){
     type:'bonus',
     caissier_nom:caissierNom
   });
-  // Mettre la date d'anniversaire à l'année prochaine pour éviter de réafficher
-  state.client.anniversaire_offert=today();
+  state.client.anniversaire_offert=anneeActuelle;
   showToast('🎂 Anniversaire enregistré !','#ffd700');
   render();
 }

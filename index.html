@@ -928,7 +928,7 @@ function renderPatron(){
 '<div style="font-size:14px;color:#ffd700;font-weight:700;margin-bottom:12px">★ Demandes VIP en attente ('+state.demandesVip.length+')</div>'+
 state.demandesVip.map(d=>'<div style="background:#0d0d0d;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">'+
 '<div><div style="font-size:13px;color:#ddd;font-weight:600">'+d.client_nom+'</div>'+
-'<div style="font-size:11px;color:#555;margin-top:2px">'+d.telephone+(d.anniversaire?' · 🎂 '+new Date(d.anniversaire).toLocaleDateString('fr-FR',{day:'numeric',month:'long':'')+'</div></div>'+
+'<div style="font-size:11px;color:#555;margin-top:2px">'+d.telephone+(d.anniversaire?' · 🎂 '+new Date(d.anniversaire).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}):'')+'</div></div>'+
 '<div style="display:flex;gap:6px">'+
 '<button onclick="accepterVip(\''+d.id+'\',\''+d.client_id+'\','+(d.anniversaire?'\''+d.anniversaire+'\'':'null')+')" style="background:#7ec87e;border:none;color:#0a0a0a;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">✓ Accepter</button>'+
 '<button onclick="refuserVip(\''+d.id+'\')" style="background:rgba(232,112,112,.1);border:1px solid rgba(232,112,112,.3);color:#e87070;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer">✕</button>'+

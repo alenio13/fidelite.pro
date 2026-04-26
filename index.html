@@ -922,27 +922,20 @@ function renderPatron(){
         (Object.keys(s.stats_caissiers||{}).length>0?
           '<div style="font-size:10px;letter-spacing:2px;color:#333;text-transform:uppercase;margin-bottom:6px">Par caissier</div>'+
           Object.entries(s.stats_caissiers).map(([nom,d])=>'<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-top:1px solid #161616"><span style="color:#888">'+nom+'</span><span style="color:#c8956c">'+d.pts+' pts · '+d.tx+' ventes</span></div>').join(''):'')+'</div>';
-    });
-    +((state.demandesVip&&state.demandesVip.length>0)?
+ });
+html+=((state.demandesVip&&state.demandesVip.length>0)?
 '<div style="background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,165,0,.05));border:2px solid rgba(255,215,0,.4);border-radius:16px;padding:16px;margin-bottom:16px">'+
 '<div style="font-size:14px;color:#ffd700;font-weight:700;margin-bottom:12px">★ Demandes VIP en attente ('+state.demandesVip.length+')</div>'+
-state.demandesVip.map(d=>'<div style="background:#0d0d0d;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">'+
+state.demandesVip.map(d=>
+'<div style="background:#0d0d0d;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">'+
 '<div><div style="font-size:13px;color:#ddd;font-weight:600">'+d.client_nom+'</div>'+
 '<div style="font-size:11px;color:#555;margin-top:2px">'+d.telephone+(d.anniversaire?' · 🎂 '+d.anniversaire.slice(8,10)+'/'+d.anniversaire.slice(5,7):'')+'</div></div>'+
 '<div style="display:flex;gap:6px">'+
 '<button onclick="accepterVip(\''+d.id+'\',\''+d.client_id+'\','+(d.anniversaire?'\''+d.anniversaire+'\'':'null')+')" style="background:#7ec87e;border:none;color:#0a0a0a;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">✓ Accepter</button>'+
 '<button onclick="refuserVip(\''+d.id+'\')" style="background:rgba(232,112,112,.1);border:1px solid rgba(232,112,112,.3);color:#e87070;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer">✕</button>'+
 '</div></div>').join('')+
-'</div>':'')
-    html+='<div class="section-title" style="margin-top:20px">QR code accès client</div>'+
-      '<div style="background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:20px;margin-bottom:16px;display:flex;flex-direction:column;align-items:center;gap:12px">'+
-      '<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data='+encodeURIComponent(window.location.origin+'/client')+'" style="border-radius:12px;width:180px;height:180px" alt="QR Code">'+
-      '<div style="font-size:11px;color:#444;font-family:monospace;text-align:center">'+window.location.origin+'/client</div>'+
-      '<button onclick="printPatronQR()" style="background:#1a1a1a;border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer">🖨️ Imprimer le QR code</button></div>'+
-      '<div class="section-title">Par caissier</div>';
-    if(!Object.keys(statsCaissier).length)html+='<div class="empty">Aucune activité</div>';
-    Object.entries(statsCaissier).forEach(([nom,s])=>{
-      html+='<div class="caissier-row"><div><div style="font-size:14px;color:#ddd;font-weight:600">'+nom+'</div><div style="font-size:12px;color:#555;margin-top:2px">'+s.tx+' transaction'+(s.tx>1?'s':'')+'</div></div><div style="font-size:14px;color:#c8956c;font-weight:700">+'+s.pts+' pts</div></div>';
+'</div>':'');
+html+='<div class="section-title" style="margin-top:20px">QR code accès client</div>'+
     });
   }
 
@@ -1336,8 +1329,7 @@ function printQR(){
 }
   async function envoyerDemandeVip(){
   if(!state.client)return;
-  const annivRaw=document.getElementById('demande-anniv')?.value||null;
-const anniv=annivRaw||null;
+  const anniv=document.getElementById('demande-anniv')?.value||null;
   const {error}=await sb.from('demandes_vip').insert({
     client_id:state.client.id,
     client_nom:state.client.nom,

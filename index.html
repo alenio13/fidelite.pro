@@ -476,7 +476,9 @@ function renderSummary(productItems,bonusItems,total){
   const c=state.client;
   const vipBonus=c&&c.vip&&c.vip_bonus>0;
   const basePts=productItems.reduce((s,p)=>s+(state.cart[p.id]||0),0);
-  const bonusPtsVip=vipBonus?Math.floor(basePts*c.vip_bonus/100):0;
+const bonusPtsBase=bonusItems.reduce((s,b)=>s+(b.points||0),0);
+const totalPourVip=basePts+bonusPtsBase;
+const bonusPtsVip=vipBonus?Math.round((totalPourVip*c.vip_bonus/100)*10)/10:0;
 
   let html='<button class="back-btn" onclick="state.step=\'catalog\';render()">← Modifier la commande</button>';
 

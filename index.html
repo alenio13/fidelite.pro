@@ -336,14 +336,15 @@ function renderCashier(){
   if(state.client){
     const c=state.client;
     // Anniversaire
-    if(c.anniversaire){
-      const todayStr=today();
-      const annivStr=c.anniversaire.slice(5); // MM-DD
-      const todayMMDD=todayStr.slice(5);
-      if(annivStr===todayMMDD){
-        html+='<div style="background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,165,0,.05));border:2px solid rgba(255,215,0,.4);border-radius:14px;padding:14px 16px;margin-bottom:14px">'+
-          '<div style="font-size:14px;color:#ffd700;font-weight:700;margin-bottom:4px">🎂 Anniversaire de '+c.nom+' !</div>'+
-          '<div style="font-size:12px;color:#a8900a">Offrez-lui sa récompense anniversaire</div></div>';
+    if(c.anniversaire&&c.anniversaire_offert!==today()){
+  const todayStr=today();
+  const annivStr=c.anniversaire.slice(5);
+  const todayMMDD=todayStr.slice(5);
+  if(annivStr===todayMMDD){
+        html+='<div style="background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,165,0,.05));border:2px solid rgba(255,215,0,.4);border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">'+
+  '<div><div style="font-size:14px;color:#ffd700;font-weight:700;margin-bottom:4px">🎂 Anniversaire de '+c.nom+' !</div>'+
+  '<div style="font-size:12px;color:#a8900a">Offrez-lui sa récompense anniversaire</div></div>'+
+  '<button onclick="marquerAnniversaire()" style="background:rgba(255,215,0,.2);border:1px solid rgba(255,215,0,.4);color:#ffd700;border-radius:10px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:700">✓ Offert</button></div>';
       }
     }
     // Récompense mensuelle VIP
@@ -1216,7 +1217,8 @@ async function saveAjustPoints(clientId){
     await upsertClientPoints(clientId,p.id,clamped);
     state.selectedClientPoints[p.id]=clamped;
   }
-  await sb.from('clients').update({points:globalPts}).eq('id',clientId);
+  const nouveauNiveau=globalPts>=2000?'Platine':globalPts>=1000?'Or':globalPts>=500?'Argent':'Bronze';
+await sb.from('clients').update({points:globalPts,niveau_actuel:nouveauNiveau}).eq('id',clientId);
   if(diff!==0){
     await sb.from('transactions').insert({client_id:clientId,label:'✏️ Ajustement patron ('+(diff>0?'+':'')+diff+' pts)',points:diff,type:'bonus',caissier_nom:'Patron'});
   }
@@ -1298,6 +1300,21 @@ function printQR(){
   const win=window.open('','_blank');
   win.document.write('<html><head><title>Carte — '+state.client.nom+'</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif}.card{border:2px solid #c8956c;border-radius:16px;padding:24px;text-align:center;width:280px}</style></head><body><div class="card"><div style="font-size:16px;font-weight:bold;color:#1a1410;margin-bottom:4px">'+SHOP_NAME+'</div><div style="font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Carte Fidélité</div><img src="'+canvas.toDataURL()+'" width="160" height="160"><div style="font-size:16px;font-weight:bold;margin-top:12px">'+state.client.nom+'</div><div style="font-size:11px;color:#aaa;margin-top:6px">Présentez ce QR code en caisse</div></div></body></html>');
   win.document.close();win.print();
+}
+    async function marquerAnniversaire(){
+  if(!state.client)return;
+  const caissierNom=state.caissierActif?state.caissierActif.nom:null;
+  await sb.from('transactions').insert({
+    client_id:state.client.id,
+    label:'🎂 Récompense anniversaire offerte',
+    points:0,
+    type:'bonus',
+    caissier_nom:caissierNom
+  });
+  // Mettre la date d'anniversaire à l'année prochaine pour éviter de réafficher
+  state.client.anniversaire_offert=today();
+  showToast('🎂 Anniversaire enregistré !','#ffd700');
+  render();
 }
 function showToast(msg,color){
   color=color||'#8fc98a';

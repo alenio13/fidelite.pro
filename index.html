@@ -923,7 +923,7 @@ function renderPatron(){
           '<div style="font-size:10px;letter-spacing:2px;color:#333;text-transform:uppercase;margin-bottom:6px">Par caissier</div>'+
           Object.entries(s.stats_caissiers).map(([nom,d])=>'<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-top:1px solid #161616"><span style="color:#888">'+nom+'</span><span style="color:#c8956c">'+d.pts+' pts · '+d.tx+' ventes</span></div>').join(''):'')+'</div>';
     });
-    ((state.demandesVip&&state.demandesVip.length>0)?
+    +((state.demandesVip&&state.demandesVip.length>0)?
 '<div style="background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,165,0,.05));border:2px solid rgba(255,215,0,.4);border-radius:16px;padding:16px;margin-bottom:16px">'+
 '<div style="font-size:14px;color:#ffd700;font-weight:700;margin-bottom:12px">★ Demandes VIP en attente ('+state.demandesVip.length+')</div>'+
 state.demandesVip.map(d=>'<div style="background:#0d0d0d;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">'+

@@ -336,7 +336,7 @@ function renderCashier(){
   if(state.client){
     const c=state.client;
     // Anniversaire
-    if(c.anniversaire&&c.anniversaire_offert!==today()){
+    if(c.anniversaire&&c.anniversaire_offert!==new Date().getFullYear()){
   const todayStr=today();
   const annivStr=c.anniversaire.slice(5);
   const todayMMDD=todayStr.slice(5);

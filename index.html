@@ -663,8 +663,6 @@ async function handlePay(){
     await sb.from('transactions').insert({client_id:c.id,label:'★ Bonus VIP +'+c.vip_bonus+'% (+'+vipBonusPts+' pts sur '+totalAvantVip+' pts)',points:vipBonusPts,type:'bonus',caissier_nom:caissierNom});
   }
 
-  const bonusPts=bonusCartItems.reduce((s,b)=>s+(b.points||0),0);
-const totalAvantVip=globalPts+bonusPts;
 const vipBonusPts=(c.vip&&c.vip_bonus>0)?Math.round((totalAvantVip*c.vip_bonus/100)*10)/10:0;
   for(const b of bonusCartItems){
     await sb.from('transactions').insert({client_id:state.client.id,label:'⭐ '+b.nom,points:b.points,type:'bonus',caissier_nom:caissierNom});

@@ -555,18 +555,27 @@ async function marquerRecompenseMensuelle(){
 
 async function utiliserRecompenseNiveau(id,description,pointsRequis,niveau){
   if(!state.client)return;
-  if(state.client.points<pointsRequis)return showToast('Pas assez de points','#e87070');
-  if(!confirm('Offrir "'+description+'" et déduire '+pointsRequis+' pts ?'))return;
-  const newPts=state.client.points-pointsRequis;
-  // Passer au niveau suivant
+  if(!confirm('Offrir "'+description+'" au client ?'))return;
   const currentIdx=LEVEL_ORDER.indexOf(niveau);
   const nextNiveau=LEVEL_ORDER[currentIdx+1]||niveau;
-  await sb.from('clients').update({points:newPts,niveau_actuel:nextNiveau,recompense_niveau_recup:false}).eq('id',state.client.id);
+  // Pas de déduction de points — juste passage au niveau suivant
+  await sb.from('clients').update({
+    niveau_actuel:nextNiveau,
+    recompense_niveau_recup:false
+  }).eq('id',state.client.id);
   const caissierNom=state.caissierActif?state.caissierActif.nom:null;
-  await sb.from('transactions').insert({client_id:state.client.id,label:'🎁 Récompense '+niveau+' — '+description+' · Passage au niveau '+nextNiveau,points:-pointsRequis,type:'redeem',caissier_nom:caissierNom});
-  state.client.points=newPts;state.client.niveau_actuel=nextNiveau;state.client.recompense_niveau_recup=false;
-  showToast('🎉 '+description+' offert ! Niveau '+nextNiveau+' débloqué !','#7ec87e');render();
+  await sb.from('transactions').insert({
+    client_id:state.client.id,
+    label:'🎁 Récompense '+niveau+' — '+description+' → Niveau '+nextNiveau+' débloqué',
+    points:0,
+    type:'bonus',
+    caissier_nom:caissierNom
+  });
+  state.client.niveau_actuel=nextNiveau;
+  showToast('🎉 '+description+' offert ! Niveau '+nextNiveau+' débloqué !','#7ec87e');
+  render();
 }
+
 
 async function addColis(type){
   if(state.colisToday)return showToast('Colis déjà enregistré aujourd\'hui','#e87070');

@@ -392,7 +392,9 @@ function renderCashier(){
       html+='<button class="product-btn '+(selected?'selected':'')+'" onclick="addBonus(\''+b.id+'\',\''+b.nom.replace(/'/g,"\\'")+'\','+b.points+')"  style="'+(selected?'border-color:rgba(126,200,126,.5)':'')+'">'+
         '<div style="font-size:22px;margin-bottom:4px">'+b.icon+'</div>'+
         '<div style="font-size:13px;color:#e0ddd8;font-weight:500;margin-bottom:6px">'+b.nom+'</div>'+
-        '<div style="display:flex;justify-content:center"><span style="background:rgba(126,200,126,.15);color:#7ec87e;border:1px solid rgba(126,200,126,.3);border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">+'+b.points+' pts</span></div>'+
+        '<div style="display:flex;justify-content:center'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">'+
+'<span style="font-size:12px;color:#777">'+(b.prix>0?parseFloat(b.prix).toFixed(2)+' €':'Gratuit')+'</span>'+
+'<span style="background:rgba(126,200,126,.15);color:#7ec87e;border:1px solid rgba(126,200,126,.3);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">+'+b.points+' pts</span></div>'+
         (selected?'<div style="position:absolute;top:6px;right:6px;display:flex;gap:4px;align-items:center">'+
 '<button onclick="event.stopPropagation();removeBonus(\''+b.id+'\','+b.points+')" style="background:rgba(232,112,112,.3);border:none;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>'+
 '<span style="background:#7ec87e;color:#0a0a0a;border-radius:50%;width:22px;height:22px;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center">'+(state.cart['bonus_'+b.id]?.qty||1)+'</span></div>':'')+
@@ -1071,8 +1073,11 @@ function renderPatronRecompenses(){
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'+
     '<input class="input-sm" id="bp-icon" placeholder="Icône">'+
     '<input class="input-sm" id="bp-nom" placeholder="Nom"></div>'+
-    '<div style="margin-bottom:10px"><div style="font-size:10px;color:#555;margin-bottom:4px">POINTS ACCORDÉS</div>'+
-    '<input class="input-sm" id="bp-points" type="number" placeholder="10"></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
+'<div><div style="font-size:10px;color:#555;margin-bottom:4px">POINTS ACCORDÉS</div>'+
+'<input class="input-sm" id="bp-points" type="number" placeholder="10"></div>'+
+'<div><div style="font-size:10px;color:#555;margin-bottom:4px">PRIX (€)</div>'+
+'<input class="input-sm" id="bp-prix" type="number" step="0.01" placeholder="5.00"></div></div>'+
     '<button onclick="addBonusPoint()" style="width:100%;background:rgba(249,208,86,.15);border:1px solid rgba(249,208,86,.3);color:#f9d056;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">+ Ajouter</button></div>';
   if(!(state.bonusPoints||[]).length)html+='<div class="empty">Aucun bonus créé</div>';
   (state.bonusPoints||[]).forEach(b=>{
@@ -1296,7 +1301,8 @@ async function addBonusPoint(){
   const nom=document.getElementById('bp-nom')?.value?.trim();
   const points=parseInt(document.getElementById('bp-points')?.value)||10;
   if(!nom)return showToast('Remplissez le nom','#e87070');
-  await sb.from('bonus_points').insert({nom,icon,points,actif:true,ordre:(state.bonusPoints||[]).length+1});
+  const prix=parseFloat(document.getElementById('bp-prix')?.value)||0;
+await sb.from('bonus_points').insert({nom,icon,points,prix,actif:true,ordre:(state.bonusPoints||[]).length+1});
   showToast('✅ '+nom+' ajouté !','#8fc98a');await loadPatronData();render();
 }
 async function deleteBonusPoint(id,nom){

@@ -543,6 +543,8 @@ function toggleBonus(id,nom,points){
     state.cart[key].points=points*(state.cart[key].qty);
   } else {
     const bonusProduit=state.bonusPoints.find(b=>b.id===id); 
+    console.log('bonus prix:', bonusProduit?.prix);
+state.cart[key]={id,nom,points,prixUnitaire:bonusProduit?parseFloat(bonusProduit.prix)||0:0,isBonus:true,qty:1};
     state.cart[key]={id,nom,points,prix:bonusProduit?parseFloat(bonusProduit.prix)||0:0,isBonus:true,qty:1};
   }
   render();

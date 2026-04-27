@@ -894,18 +894,18 @@ async function selectPatronClient(clientId,clientJson){
 function renderPatron(){
   if(state.selectedClient)return renderPatronClientDetail();
   const PTABS=[{id:'stats',l:'📊 Stats'},{id:'produits',l:'🛍️ Produits'},{id:'recompenses',l:'🎁 Récomp.'},{id:'clients',l:'👥 Clients'},{id:'caissiers',l:'🏪 Caissiers'},{id:'activite',l:'📋 Activité'}];
-  const txEarn=(state.allTransactions||[]).filter(t=>t.type==='earn');
+  const txEarn=(state.allTransactions||[]).filter(t=>t.type==='earn'||t.type==='bonus');
   const totalPts=txEarn.reduce((s,t)=>s+(t.points||0),0);
   const statsCaissier={};
   (state.allTransactions||[]).forEach(t=>{
-    if(t.type==='earn'&&t.caissier_nom){
+    if((t.type==='earn'||t.type==='bonus')&&t.caissier_nom){
       if(!statsCaissier[t.caissier_nom])statsCaissier[t.caissier_nom]={tx:0,pts:0};
       statsCaissier[t.caissier_nom].tx++;statsCaissier[t.caissier_nom].pts+=t.points||0;
     }
   });
   const filtered=(state.allClients||[]).filter(c=>c.nom.toLowerCase().includes(state.clientSearch.toLowerCase())||c.telephone.includes(state.clientSearch));
   const moisActuel=new Date().toISOString().slice(0,7);
-  const txMois=(state.allTransactions||[]).filter(t=>t.created_at&&t.created_at.slice(0,7)===moisActuel&&t.type==='earn');
+  const txMois=(state.allTransactions||[]).filter(t=>t.created_at&&t.created_at.slice(0,7)===moisActuel&&(t.type==='earn'||t.type==='bonus'));
   const ptsMois=txMois.reduce((s,t)=>s+(t.points||0),0);
   const nvClients=(state.allClients||[]).filter(c=>c.created_at&&c.created_at.slice(0,7)===moisActuel).length;
 
@@ -1327,7 +1327,7 @@ async function deleteBonusPoint(id,nom){
 async function resetStatsConfirm(){
   if(!confirm('Archiver les stats de ce mois ?'))return;
   const moisActuel=new Date().toISOString().slice(0,7);
-  const txMois=(state.allTransactions||[]).filter(t=>t.created_at&&t.created_at.slice(0,7)===moisActuel&&t.type==='earn');
+  const txMois=(state.allTransactions||[]).filter(t=>t.created_at&&t.created_at.slice(0,7)===moisActuel&&(t.type==='earn'||t.type==='bonus'));
   const ptsDist=txMois.reduce((s,t)=>s+(t.points||0),0);
   const statsCaissiers={};
   txMois.forEach(t=>{

@@ -842,7 +842,7 @@ async function loadPatronData(){
   const moisActuel=new Date().toISOString().slice(0,7);
   const [{data:c},{data:t},{data:cl},{data:sm},{data:rn},{data:bp},{data:rv},{data:dv}]=await Promise.all([
     sb.from('caissiers').select('*').order('created_at',{ascending:false}),
-    sb.from('transactions').select('*').order('created_at',{ascending:false}).limit(200),
+    sb.from('transactions').select('*').order('created_at',{ascending:false}).limit(500),
     sb.from('clients').select('*').order('created_at',{ascending:false}),
     sb.from('stats_mensuelles').select('*').order('mois',{ascending:false}).limit(12),
     sb.from('recompenses_niveaux').select('*').order('points_requis'),

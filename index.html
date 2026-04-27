@@ -324,7 +324,7 @@ function renderCashier(){
   const productItems=state.products.filter(p=>(state.cart[p.id]||0)>0);
   const bonusItems=Object.values(state.cart).filter(v=>v&&v.isBonus);
   const total=productItems.reduce((s,p)=>s+p.prix*(state.cart[p.id]||0),0)+
-  Object.values(state.cart).filter(v=>v&&v.isBonus).reduce((s,b)=>s+(b.prix||0)*(b.qty||1),0);
+  Object.values(state.cart).filter(v=>v&&v.isBonus).reduce((s,b)=>s+(b.prixUnitaire||0)*(b.qty||1),0);
   const cartCount=productItems.length+bonusItems.length;
 
   if(state.step==='summary')return renderSummary(productItems,bonusItems,total);

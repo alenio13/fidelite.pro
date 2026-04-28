@@ -338,10 +338,11 @@ function renderCashier(){
     const c=state.client;
     // Anniversaire
     if(c.anniversaire&&c.anniversaire_offert!==new Date().getFullYear()){
-  const todayStr=today();
-  const annivStr=c.anniversaire.slice(5);
-  const todayMMDD=todayStr.slice(5);
-  if(annivStr===todayMMDD){
+  const todayDate=new Date();
+const annivStr=c.anniversaire.slice(5);
+const annivCetteAnnee=new Date(todayDate.getFullYear()+'-'+annivStr);
+const diffJours=Math.floor((todayDate-annivCetteAnnee)/(1000*60*60*24));
+if(diffJours>=0&&diffJours<=14){
         html+='<div style="background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,165,0,.05));border:2px solid rgba(255,215,0,.4);border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">'+
   '<div><div style="font-size:14px;color:#ffd700;font-weight:700;margin-bottom:4px">🎂 Anniversaire de '+c.nom+' !</div>'+
   '<div style="font-size:12px;color:#a8900a">Offrez-lui sa récompense anniversaire</div></div>'+

@@ -230,6 +230,10 @@ function generateQR(clientId){
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function render(){
   const root=document.getElementById('root');
+  if(!SUPABASE_URL||SUPABASE_URL==='https://tgrqfrijwjonrehixgre.supabase.co'){
+  root.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:24px;text-align:center"><div style="font-size:40px">⚙️</div><div style="font-size:18px;font-weight:700;color:#e8a87c">Configuration requise</div><div style="font-size:13px;color:#888">L\'application n\'est pas encore configurée.<br>Contactez votre administrateur.</div></div>';
+  return;
+}
   if(state.scanning){root.innerHTML=renderScanner();return;}
   if(state.view==='login'){root.innerHTML=renderLogin();return;}
   let html=(state.toast?'<div class="toast" style="border:1px solid '+state.toast.color+'77;color:'+state.toast.color+'">'+state.toast.msg+'</div>':'')+
@@ -291,10 +295,14 @@ function renderLogin(){
 }
 
 async function loginPatron(){
+  try{
   const pwd=document.getElementById('patron-pwd').value;
   if(pwd===PATRON_PWD){state.role='patron';state.view='patron';await loadPatronData();render();}
   else showToast('Mot de passe incorrect','#e87070');
-}
+    }catch(e){
+    showToast('❌ Erreur de connexion — vérifiez votre connexion internet','#e87070');
+  }
+  }
 async function loginCaissier(){
   const code=document.getElementById('caissier-code').value.trim();
   if(!code)return;
@@ -1398,6 +1406,14 @@ async function refuserVip(demandeId){
   await sb.from('demandes_vip').update({statut:'refuse'}).eq('id',demandeId);
   showToast('Demande refusée','#e87070');
   await loadPatronData();render();
+}
+  async function safeQuery(fn){
+  try{return await fn();}
+  catch(e){
+    showToast('❌ Problème de connexion — réessayez','#e87070');
+    console.error(e);
+    return {data:null,error:e};
+  }
 }
 function showToast(msg,color){
   color=color||'#8fc98a';

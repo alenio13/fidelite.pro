@@ -865,6 +865,8 @@ async function loadPatronData(){
   state.statsMensuelles=sm||[];state.recompensesNiveaux=rn||[];
   state.bonusPoints=bp||[];state.recompenseVip=(rv&&rv[0])||null;
   state.demandesVip=dv||[];
+  const {data:pe}=await sb.from('config').select('valeur').eq('cle','points_email').single();
+state.pointsEmail=pe?parseInt(pe.valeur)||0:0;
   await archivageAuto(moisActuel);
   await loadProducts();
 }
@@ -986,7 +988,8 @@ Object.entries(statsCaissier).forEach(([nom,s])=>{
       const cJson=encodeURIComponent(JSON.stringify(c));
       html+='<div class="client-row" onclick="selectPatronClient(\''+c.id+'\',\''+cJson+'\')">'+
         '<div><div style="font-size:14px;color:#ddd;font-weight:600">'+c.nom+(c.vip?' <span style="color:#ffd700;font-size:12px">★ VIP</span>':'')+'</div>'+
-        '<div style="font-size:12px;color:#555;margin-top:2px">'+c.telephone+(c.email?' · 📧 '+c.email:' · <span style="color:#555">Pas d\'email</span>')+'</div>'+new Date(c.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})+'</div></div>'+
+        '<div style="font-size:12px;color:#555;margin-top:2px">'+c.telephone+'</div>'+
+(c.email?'<div style="font-size:11px;color:#7ec87e;margin-top:1px">📧 '+c.email+'</div>':'<div style="font-size:11px;color:#444;margin-top:1px">Pas d\'email</div>')+
         '<div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px">'+
         '<span class="'+getBadgeClass(c.points)+'">'+lv.name+'</span>'+
         '<span style="font-size:13px;font-weight:700;color:'+lv.color+';font-family:monospace">'+c.points+' pts</span></div></div>';
@@ -1034,7 +1037,9 @@ Object.entries(statsCaissier).forEach(([nom,s])=>{
 '<div style="margin-bottom:10px"><div style="font-size:11px;color:#888;margin-bottom:4px">POINTS À OFFRIR</div>'+
 '<input class="input" type="number" id="offre-points" placeholder="Ex: 50" style="margin-bottom:0"></div>'+
 '<button onclick="sauvegarderPointsEmail()" style="width:100%;background:rgba(126,200,126,.15);border:1px solid rgba(126,200,126,.3);color:#7ec87e;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">💾 Enregistrer</button>'+
-'<div style="font-size:12px;color:#555;margin-top:10px">'+(state.allClients||[]).filter(c=>c.email).length+' client'+(((state.allClients||[]).filter(c=>c.email).length)>1?'s ont':'a')+' renseigné leur email</div>';
+'<div style="background:#1e1e2e;border-radius:8px;padding:8px 12px;margin-top:10px;font-size:12px;color:#7ec87e">'+(state.allClients||[]).filter(c=>c.email).length+' client'+(((state.allClients||[]).filter(c=>c.email).length)>1?'s ont':'a')+' renseigné leur email</div>';
+'✓ Valeur actuelle : <strong>'+(state.pointsEmail||0)+' pts</strong> offerts à l\'inscription</div>'+
+'<div style="font-size:12px;color:#555;margin-top:6px">'+   
 (state.allClients||[]).filter(c=>c.email).length+' client'+(((state.allClients||[]).filter(c=>c.email).length)>1?'s':'')+ ' avec email enregistré</div>'+
 '<div style="margin-bottom:10px"><div style="font-size:11px;color:#888;margin-bottom:4px">POINTS À OFFRIR</div>'+
 '<input class="input" type="number" id="offre-points" placeholder="Ex: 50" style="margin-bottom:0"></div>'+

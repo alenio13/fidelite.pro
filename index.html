@@ -1223,8 +1223,9 @@ async function createCaissier(){
   showToast('✅ '+nom+' créé !','#8fc98a');await loadPatronData();render();
 }
 async function deleteCaissier(id){
-  await sb.from('caissiers').update({actif:false}).eq('id',id);
-  showToast('Caissier désactivé','#e87070');await loadPatronData();render();
+  if(!confirm('Supprimer définitivement ce caissier ?'))return;
+  await sb.from('caissiers').delete().eq('id',id);
+  showToast('Caissier supprimé','#e87070');await loadPatronData();render();
 }
 async function deleteClient(id,nom){
   if(!confirm('Supprimer définitivement '+nom+' ?'))return;

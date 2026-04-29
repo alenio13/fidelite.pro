@@ -16,7 +16,7 @@ body{background:#1e1e2e;color:#f5f2ee;font-family:'Helvetica Neue',sans-serif;mi
 .badge-platine{background:rgba(224,224,255,.25);color:#e0e0ff;border-color:rgba(224,224,255,.4)}
 .badge-vip{background:rgba(255,215,0,.25);color:#ffd700;border:1px solid rgba(255,215,0,.5);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700}
 .tabs{display:flex;gap:4px;background:#2a2a3e;border-radius:14px;padding:5px;margin-bottom:20px}
-.tab{flex:1;padding:9px 4px;font-size:12px;background:transparent;border:1px solid transparent;color:#aaa;border-radius:10px;cursor:pointer;transition:all .2s;text-align:center}
+.tab{flex:1;padding:9px 4px;font-size:11px;background:transparent;border:1px solid transparent;color:#aaa;border-radius:10px;cursor:pointer;transition:all .2s;text-align:center}
 .tab.active{background:#3a3a52;font-weight:700;color:#f5f2ee}
 .section-title{font-size:10px;letter-spacing:3px;color:#aaa;text-transform:uppercase;margin-bottom:10px}
 .input{background:#2a2a3e;border:1px solid #4a4a60;border-radius:12px;padding:13px 16px;color:#f5f2ee;font-size:14px;outline:none;width:100%;margin-bottom:12px}
@@ -35,8 +35,6 @@ body{background:#1e1e2e;color:#f5f2ee;font-family:'Helvetica Neue',sans-serif;mi
 .qr-section{background:#2a2a3e;border:1px solid #3a3a50;border-radius:16px;padding:18px;margin-top:14px;display:flex;flex-direction:column;align-items:center;gap:10px}
 .qr-div{border-radius:12px;background:#fff;padding:10px;display:flex;align-items:center;justify-content:center}
 .vip-banner{background:linear-gradient(135deg,rgba(255,215,0,.2),rgba(255,165,0,.1));border:1px solid rgba(255,215,0,.4);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:16px}
-.login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;padding:24px}
-.login-box{background:#2a2a3e;border:1px solid #3a3a50;border-radius:20px;padding:28px 24px;width:100%;max-width:380px}
 </style>
 </head>
 <body>
@@ -55,13 +53,17 @@ const LEVELS=[
 ];
 const LEVEL_ORDER=["Bronze","Argent","Or","Platine"];
 
-function getLevel(p){return LEVELS.find(l=>p>=l.min&&p<=l.max)||LEVELS[0]}
-function getBadgeClass(pts){const n=getLevel(pts).name;return n==='Argent'?'badge badge-argent':n==='Or'?'badge badge-or':n==='Platine'?'badge badge-platine':'badge'}
-function today(){return new Date().toISOString().split('T')[0]}
-function oneYearAgo(){const d=new Date();d.setFullYear(d.getFullYear()-1);return d.toISOString().split('T')[0]}
+function getLevel(p){return LEVELS.find(l=>p>=l.min&&p<=l.max)||LEVELS[0];}
+function getBadgeClass(pts){
+  const n=getLevel(pts).name;
+  return n==='Argent'?'badge badge-argent':n==='Or'?'badge badge-or':n==='Platine'?'badge badge-platine':'badge';
+}
+function today(){return new Date().toISOString().split('T')[0];}
+function oneYearAgo(){const d=new Date();d.setFullYear(d.getFullYear()-1);return d.toISOString().split('T')[0];}
 
 let state={
-  client:null, transactions:[], clientPoints:{}, products:[], recompensesNiveaux:[], recompenseVip:null,
+  client:null, transactions:[], clientPoints:{}, products:[],
+  recompensesNiveaux:[], recompenseVip:null,
   tab:'card', toast:null, loggedIn:false,
 };
 
@@ -88,7 +90,7 @@ async function loadRecompenses(){
 }
 
 function generateQR(clientId){
-  setTimeout(()=>{
+  setTimeout(function(){
     const div=document.getElementById('qr-div-'+clientId);
     if(!div||div.querySelector('canvas'))return;
     new QRCode(div,{text:'FL-'+clientId,width:180,height:180,colorDark:'#000000',colorLight:'#ffffff'});
@@ -96,24 +98,34 @@ function generateQR(clientId){
 }
 
 function render(){
-  document.getElementById('root').innerHTML=
-    (state.toast?'<div class="toast" style="border:1px solid '+state.toast.color+'77;color:'+state.toast.color+'">'+state.toast.msg+'</div>':'')+
-    (!state.loggedIn?renderLogin():renderCard());
-  if(state.loggedIn&&state.tab==='card'&&state.client)generateQR(state.client.id);
+  const root=document.getElementById('root');
+  let html='';
+  if(state.toast){
+    html+='<div class="toast" style="border:1px solid '+state.toast.color+'77;color:'+state.toast.color+'">'+state.toast.msg+'</div>';
+  }
+  if(!state.loggedIn){
+    html+=renderLogin();
+  } else {
+    html+=renderCard();
+  }
+  root.innerHTML=html;
+  if(state.loggedIn&&state.tab==='card'&&state.client){
+    generateQR(state.client.id);
+  }
 }
 
 function renderLogin(){
-  return '<div class="login-screen">'+
+  return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;padding:24px">'+
     '<div style="text-align:center">'+
     '<div style="font-size:10px;letter-spacing:4px;color:#aaa;text-transform:uppercase;margin-bottom:4px">programme fidélité</div>'+
     '<div style="font-size:24px;letter-spacing:1px;color:#f5f2ee">'+SHOP_NAME+'</div></div>'+
-    '<div class="login-box">'+
+    '<div style="background:#2a2a3e;border:1px solid #3a3a50;border-radius:20px;padding:28px 24px;width:100%;max-width:380px">'+
     '<div style="text-align:center;margin-bottom:20px">'+
     '<div style="font-size:40px;margin-bottom:8px">🎴</div>'+
     '<div style="font-size:18px;font-weight:700;color:#f5f2ee">Ma Carte Fidélité</div>'+
     '<div style="font-size:12px;color:#888;margin-top:6px">Connectez-vous pour accéder à vos points</div></div>'+
-    '<input class="input" type="tel" id="tel-input" placeholder="Votre numéro de téléphone" onkeydown="if(event.key===\'Enter\')loginClient()">'+
-    '<input class="input" type="password" id="pin-input" placeholder="Votre code PIN à 4 chiffres" maxlength="4" onkeydown="if(event.key===\'Enter\')loginClient()">'+
+    '<input class="input" type="tel" id="tel-input" placeholder="Votre numéro de téléphone">'+
+    '<input class="input" type="password" id="pin-input" placeholder="Votre code PIN à 4 chiffres" maxlength="4">'+
     '<button onclick="loginClient()" class="btn-primary">Accéder à ma carte</button>'+
     '<div style="text-align:center;margin-top:16px;font-size:12px;color:#666;line-height:1.7">'+
     'Pas encore de compte ?<br><span style="color:#e8a87c">Demandez à votre caissier de vous inscrire</span></div></div>'+
@@ -127,14 +139,24 @@ async function loginClient(){
   if(!tel||!pin)return showToast('Entrez votre numéro et PIN','#e87070');
   const {data}=await sb.from('clients').select('*').eq('telephone',tel).eq('pin',pin).single();
   if(data){
-    state.client=data;state.loggedIn=true;
+    state.client=data;
+    state.loggedIn=true;
     await Promise.all([loadProducts(),loadClientPoints(data.id),loadTransactions(data.id),loadRecompenses()]);
     render();
-  } else showToast('Numéro ou PIN incorrect','#e87070');
+  } else {
+    showToast('Numéro ou PIN incorrect','#e87070');
+  }
 }
 
 function logout(){
-  Object.assign(state,{client:null,loggedIn:false,transactions:[],clientPoints:{},products:[],recompensesNiveaux:[],recompenseVip:null,tab:'card'});
+  state.client=null;
+  state.loggedIn=false;
+  state.transactions=[];
+  state.clientPoints={};
+  state.products=[];
+  state.recompensesNiveaux=[];
+  state.recompenseVip=null;
+  state.tab='card';
   render();
 }
 
@@ -143,44 +165,55 @@ function renderCard(){
   const level=getLevel(c.points);
   const nextLevel=LEVELS[LEVELS.indexOf(level)+1];
   const isVip=c.vip;
-  return '<div class="app">'+
-    '<div style="text-align:center;margin-bottom:20px">'+
+
+  let html='<div class="app">';
+
+  // Header
+  html+='<div style="text-align:center;margin-bottom:20px">'+
     '<div style="font-size:10px;letter-spacing:4px;color:#aaa;text-transform:uppercase;margin-bottom:4px">programme fidélité</div>'+
-    '<div style="font-size:22px;letter-spacing:1px;color:#f5f2ee">'+SHOP_NAME+'</div></div>'+
-    // Barre client
-    '<div style="background:#2a2a3e;border:1px solid rgba(200,149,108,.2);border-radius:12px;padding:10px 14px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">'+
+    '<div style="font-size:22px;letter-spacing:1px;color:#f5f2ee">'+SHOP_NAME+'</div></div>';
+
+  // Barre client
+  html+='<div style="background:#2a2a3e;border:1px solid rgba(200,149,108,.2);border-radius:12px;padding:10px 14px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">'+
     '<div style="display:flex;gap:8px;align-items:center">'+
     '<span class="'+getBadgeClass(c.points)+'">'+level.name+'</span>'+
     (isVip?'<span class="badge-vip">★ VIP +'+c.vip_bonus+'%</span>':'')+
     '<span style="font-size:13px;color:#aaa">'+c.nom+'</span></div>'+
     '<div style="display:flex;gap:12px;align-items:center">'+
     '<span style="font-size:15px;font-weight:700;color:#e8a87c;font-family:monospace">'+c.points+' pts</span>'+
-    '<button onclick="logout()" style="background:none;border:none;color:#666;font-size:11px;cursor:pointer">⏏️</button></div></div>'+
-    // Onglets
-    '<div class="tabs">'+
-    [{id:'card',l:'🎴 Carte'},{id:'jauges',l:'📊 Points'},{id:'niveaux',l:'🏆 Niveaux'},{id:'history',l:'📋 Historique'}].map(t=>
-      '<button class="tab '+(state.tab===t.id?'active':'')+'" style="'+(state.tab===t.id?'color:'+level.color+';border-color:'+level.color+'44':'')+'" onclick="state.tab=\''+t.id+'\';render()">'+t.l+'</button>'
-    ).join('')+'</div>'+
-    (state.tab==='card'?renderCardTab(c,level,nextLevel,isVip):'')+
-    (state.tab==='jauges'?renderJaugesTab():'')+
-    (state.tab==='niveaux'?renderNiveauxTab(c,isVip):'')+
-    (state.tab==='history'?renderHistoryTab():'')+
-    '</div>';
+    '<button onclick="logout()" style="background:none;border:none;color:#666;font-size:11px;cursor:pointer">⏏️</button></div></div>';
+
+  // Onglets
+  html+='<div class="tabs">';
+  var tabs=[{id:'card',l:'🎴 Carte'},{id:'jauges',l:'📊 Points'},{id:'niveaux',l:'🏆 Niveaux'},{id:'history',l:'📋 Historique'}];
+  for(var i=0;i<tabs.length;i++){
+    var t=tabs[i];
+    html+='<button class="tab '+(state.tab===t.id?'active':'')+'" '+
+      'style="'+(state.tab===t.id?'color:'+level.color+';border-color:'+level.color+'44':'')+'" '+
+      'onclick="state.tab=\''+t.id+'\';render()">'+t.l+'</button>';
+  }
+  html+='</div>';
+
+  if(state.tab==='card') html+=renderCardTab(c,level,nextLevel,isVip);
+  if(state.tab==='jauges') html+=renderJaugesTab();
+  if(state.tab==='niveaux') html+=renderNiveauxTab(c,isVip);
+  if(state.tab==='history') html+=renderHistoryTab();
+
+  html+='</div>';
+  return html;
 }
 
 function renderCardTab(c,level,nextLevel,isVip){
   const prog=nextLevel?Math.min(100,((c.points-level.min)/(nextLevel.min-level.min))*100):100;
-
-  // Alerte points bientôt expirés
   const cutoff=oneYearAgo();
-  const expiringSoon=(state.transactions||[]).filter(t=>{
+  var expiringSoon=(state.transactions||[]).filter(function(t){
     if(!t.created_at||t.points<=0||t.type!=='earn')return false;
-    const d=t.created_at.split('T')[0];
-    const limit=new Date(d);limit.setFullYear(limit.getFullYear()+1);
-    const daysLeft=Math.ceil((limit-new Date())/(1000*60*60*24));
+    var d=t.created_at.split('T')[0];
+    var limit=new Date(d);limit.setFullYear(limit.getFullYear()+1);
+    var daysLeft=Math.ceil((limit-new Date())/(1000*60*60*24));
     return daysLeft>0&&daysLeft<=30;
   });
-  const ptsExpiring=expiringSoon.reduce((s,t)=>s+t.points,0);
+  var ptsExpiring=expiringSoon.reduce(function(s,t){return s+t.points;},0);
 
   let html='';
 
@@ -194,7 +227,7 @@ function renderCardTab(c,level,nextLevel,isVip){
 
   // Récompense mensuelle VIP
   if(isVip&&state.recompenseVip){
-    const dejaRecup=c.recompense_mensuelle_recup&&c.recompense_mensuelle_recup.slice(0,7)===new Date().toISOString().slice(0,7);
+    var dejaRecup=c.recompense_mensuelle_recup&&c.recompense_mensuelle_recup.slice(0,7)===new Date().toISOString().slice(0,7);
     if(!dejaRecup){
       html+='<div style="background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);border-radius:12px;padding:12px 16px;margin-bottom:16px">'+
         '<div style="font-size:13px;color:#ffd700;font-weight:700;margin-bottom:4px">★ Récompense mensuelle disponible !</div>'+
@@ -210,10 +243,11 @@ function renderCardTab(c,level,nextLevel,isVip){
   }
 
   // Carte visuelle
-  html+='<div class="card-visual" style="box-shadow:0 0 0 1px '+(isVip?'rgba(255,215,0,.3)':level.color+'33')+',0 20px 50px rgba(0,0,0,.6)'+(isVip?',0 0 40px rgba(255,215,0,.08)':'')+'">'+
+  html+='<div class="card-visual" style="box-shadow:0 0 0 1px '+(isVip?'rgba(255,215,0,.3)':level.color+'33')+',0 20px 50px rgba(0,0,0,.6)">'+
     '<div style="position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,'+(isVip?'rgba(255,215,0,.1)':level.color+'18')+' 0%,transparent 70%);pointer-events:none"></div>'+
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">'+
-    '<div><div style="font-size:9px;letter-spacing:3px;color:'+(isVip?'#ffd700':level.color)+';text-transform:uppercase;margin-bottom:3px">Carte Fidélité'+(isVip?' ★ VIP':'')+'</div>'+
+    '<div>'+
+    '<div style="font-size:9px;letter-spacing:3px;color:'+(isVip?'#ffd700':level.color)+';text-transform:uppercase;margin-bottom:3px">Carte Fidélité'+(isVip?' ★ VIP':'')+'</div>'+
     '<div style="font-size:16px;font-weight:700;font-family:Georgia,serif;color:#f5f2ee">'+SHOP_NAME+'</div></div>'+
     '<span class="'+getBadgeClass(c.points)+'">'+level.name+'</span></div>'+
     '<div style="font-size:48px;font-weight:800;color:'+(isVip?'#ffd700':level.color)+';letter-spacing:-3px;line-height:1;text-align:center;margin-bottom:4px">'+c.points.toLocaleString()+'</div>'+
@@ -221,34 +255,40 @@ function renderCardTab(c,level,nextLevel,isVip){
     '<div class="progress-bar"><div class="progress-fill" style="width:'+prog+'%;background:linear-gradient(90deg,'+(isVip?'rgba(255,215,0,.6),#ffd700':level.color+'66,'+level.color)+')"></div></div>'+
     (nextLevel?'<div style="font-size:11px;color:#666;text-align:right;margin-bottom:14px">'+(nextLevel.min-c.points)+' pts avant '+nextLevel.name+'</div>':'<div style="margin-bottom:14px"></div>')+
     '<div style="display:flex;justify-content:space-between;align-items:center">'+
-    '<div><div style="font-size:9px;color:#555;letter-spacing:2px;text-transform:uppercase">Titulaire</div>'+
+    '<div>'+
+    '<div style="font-size:9px;color:#555;letter-spacing:2px;text-transform:uppercase">Titulaire</div>'+
     '<div style="font-size:14px;letter-spacing:1px;margin-top:2px;color:#ccc">'+c.nom+'</div></div>'+
-    '<div style="font-family:monospace;font-size:10px;color:#444">'+c.telephone+'</div></div></div>'+
+    '<div style="font-family:monospace;font-size:10px;color:#444">'+c.telephone+'</div></div></div>';
 
-    // QR code
-    '<div class="qr-section">'+
+  // QR Code
+  html+='<div class="qr-section">'+
     '<div class="section-title">Mon QR code caisse</div>'+
     '<div id="qr-div-'+c.id+'" class="qr-div"></div>'+
     '<div style="font-size:12px;color:#888;text-align:center;line-height:1.6">Montrez ce QR code au caissier<br>pour être identifié instantanément</div>'+
-    '<button onclick="printQR()" style="background:#2a2a3e;border:1px solid #3a3a50;color:#e8a87c;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer">🖨️ Imprimer ma carte</button></div></div></div>';
-  html+='<div style="background:#2a2a3e;border:1px solid #3a3a50;border-radius:14px;padding:14px 16px;margin-top:14px;width:100%">'+
-'<div class="section-title">Mon email</div>'+
-'<div style="font-size:12px;color:#888;margin-bottom:10px">Renseignez votre email pour recevoir les offres exclusives !</div>'+
-'<div style="display:flex;gap:8px">'+
-'<input class="input" type="email" id="client-email" placeholder="votre@email.com" value="'+(state.client.email||'')+'" style="margin-bottom:0;flex:1">'+
-'<button onclick="saveEmail()" style="background:#e8a87c;border:none;color:#0a0a0a;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer">✓</button></div></div>';
-return html;
+    '<button onclick="printQR()" style="background:#2a2a3e;border:1px solid #3a3a50;color:#e8a87c;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer">🖨️ Imprimer ma carte</button></div>';
+
+  // Bloc email
+  html+='<div style="background:#2a2a3e;border:1px solid #3a3a50;border-radius:14px;padding:14px 16px;margin-top:14px">'+
+    '<div class="section-title">Mon email</div>'+
+    '<div style="font-size:12px;color:#888;margin-bottom:10px">Renseignez votre email pour recevoir les offres exclusives !</div>'+
+    '<div style="display:flex;gap:8px">'+
+    '<input class="input" type="email" id="client-email" placeholder="votre@email.com" value="'+(c.email||'')+'" style="margin-bottom:0;flex:1">'+
+    '<button onclick="saveEmail()" style="background:#e8a87c;border:none;color:#0a0a0a;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer">✓</button></div></div>';
+
+  return html;
+}
 
 function renderJaugesTab(){
   if(!state.products.length)return '<div style="text-align:center;color:#555;padding:24px">Chargement...</div>';
   let html='<div class="section-title">Mes points par produit</div>';
-  state.products.forEach(p=>{
-    const val=state.clientPoints[p.id]||0;
-    const prog=(val/p.seuil)*100;
-    const restant=p.seuil-val;
+  state.products.forEach(function(p){
+    var val=state.clientPoints[p.id]||0;
+    var prog=(val/p.seuil)*100;
+    var restant=p.seuil-val;
     html+='<div class="gauge-row">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
-      '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">'+p.icon+'</span>'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+      '<span style="font-size:20px">'+p.icon+'</span>'+
       '<span style="font-size:14px;color:#f5f2ee;font-weight:500">'+p.nom+'</span></div>'+
       '<div style="font-size:15px;font-weight:700;color:#e8a87c;font-family:monospace">'+val+'/'+p.seuil+'</div></div>'+
       '<div class="gauge-bar"><div class="gauge-fill" style="width:'+Math.min(100,prog)+'%;background:'+(prog>=80?'#7ec87e':prog>=50?'#f9d056':'#c8956c')+'"></div></div>'+
@@ -261,14 +301,12 @@ function renderJaugesTab(){
 
 function renderNiveauxTab(c,isVip){
   let html='<div class="section-title">Ma progression</div>';
-
-  // Progression niveaux
   html+='<div style="background:#2a2a3e;border:1px solid #3a3a50;border-radius:16px;padding:16px;margin-bottom:16px">';
-  LEVEL_ORDER.forEach((niv,i)=>{
-    const r=state.recompensesNiveaux.find(x=>x.niveau===niv);
-    const current=(c.niveau_actuel||'Bronze')===niv;
-    const done=LEVEL_ORDER.indexOf(c.niveau_actuel||'Bronze')>i;
-    const lv=LEVELS.find(l=>l.name===niv);
+  LEVEL_ORDER.forEach(function(niv,i){
+    var r=state.recompensesNiveaux.find(function(x){return x.niveau===niv;});
+    var current=(c.niveau_actuel||'Bronze')===niv;
+    var done=LEVEL_ORDER.indexOf(c.niveau_actuel||'Bronze')>i;
+    var lv=LEVELS.find(function(l){return l.name===niv;});
     html+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;opacity:'+(done?0.5:1)+'">'+
       '<div style="width:12px;height:12px;border-radius:50%;flex-shrink:0;background:'+(done?'#555':current?lv.color:'#333')+';box-shadow:'+(current?'0 0 10px '+lv.color:'none')+'"></div>'+
       '<div style="flex:1">'+
@@ -281,7 +319,6 @@ function renderNiveauxTab(c,isVip){
   html+='<div style="background:#1e1e2e;border-radius:10px;padding:10px 14px;font-size:12px;color:#666;line-height:1.6;margin-top:4px">'+
     '💬 Demandez au caissier d\'utiliser votre récompense pour passer au niveau suivant.</div></div>';
 
-  // Section VIP
   if(isVip){
     html+='<div style="background:linear-gradient(135deg,rgba(255,215,0,.1),rgba(255,165,0,.05));border:1px solid rgba(255,215,0,.3);border-radius:16px;padding:16px;margin-bottom:16px">'+
       '<div style="font-size:14px;color:#ffd700;font-weight:700;margin-bottom:10px">★ Avantages VIP</div>'+
@@ -296,40 +333,53 @@ function renderNiveauxTab(c,isVip){
       '<div style="font-size:14px;color:#aaa;font-weight:600;margin-bottom:6px">Devenez client VIP</div>'+
       '<div style="font-size:12px;color:#666;line-height:1.6">Bonus de points, récompense mensuelle et cadeau anniversaire.<br>Demandez à votre caissier !</div></div>';
   }
-
   return html;
 }
 
 function renderHistoryTab(){
-  const cutoff=oneYearAgo();
+  var cutoff=oneYearAgo();
   let html='<div class="section-title">Historique</div>'+
     '<div style="background:#2a2a3e;border:1px solid #3a3a50;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#666">'+
     '⏳ Les points expirent 1 an après chaque transaction</div>'+
     '<div class="tx-list">';
-  if(!state.transactions.length)html+='<div style="text-align:center;color:#333;font-size:13px;padding:24px">Aucune transaction</div>';
-  state.transactions.slice(0,30).forEach(tx=>{
-    const txDate=tx.created_at&&tx.created_at.split('T')[0];
-    const expired=txDate&&txDate<cutoff;
-    // Calculer jours avant expiration
-    let expiryWarning='';
+  if(!state.transactions.length){
+    html+='<div style="text-align:center;color:#333;font-size:13px;padding:24px">Aucune transaction</div>';
+  }
+  state.transactions.slice(0,30).forEach(function(tx){
+    var txDate=tx.created_at&&tx.created_at.split('T')[0];
+    var expired=txDate&&txDate<cutoff;
+    var expiryWarning='';
     if(!expired&&tx.points>0&&tx.type==='earn'){
-      const limit=new Date(txDate);limit.setFullYear(limit.getFullYear()+1);
-      const daysLeft=Math.ceil((limit-new Date())/(1000*60*60*24));
-      if(daysLeft<=30)expiryWarning='<span style="color:#e87070;font-size:10px"> · expire dans '+daysLeft+'j</span>';
+      var limit=new Date(txDate);
+      limit.setFullYear(limit.getFullYear()+1);
+      var daysLeft=Math.ceil((limit-new Date())/(1000*60*60*24));
+      if(daysLeft<=30) expiryWarning=' · <span style="color:#e87070">expire dans '+daysLeft+'j</span>';
     }
     html+='<div class="tx-row" style="'+(expired?'opacity:.4':'')+'">'+
-      '<div><div style="font-size:13px;color:'+(expired?'#555':'#f5f2ee')+';margin-bottom:2px">'+tx.label+'</div>'+
+      '<div>'+
+      '<div style="font-size:13px;color:'+(expired?'#555':'#f5f2ee')+';margin-bottom:2px">'+tx.label+'</div>'+
       '<div style="font-size:11px;color:#666">'+new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})+(expired?' · <span style="color:#e87070">Expiré</span>':expiryWarning)+'</div></div>'+
       '<div style="font-family:monospace;font-weight:700;font-size:13px;color:'+(expired?'#444':tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e')+'">'+(tx.points>0?'+':'')+tx.points+' pt'+(Math.abs(tx.points)>1?'s':'')+'</div></div>';
   });
-  return html+'</div>';
+  html+='</div>';
+  return html;
+}
+
+async function saveEmail(){
+  var email=document.getElementById('client-email');
+  if(!email)return;
+  var val=email.value.trim();
+  if(!val||!val.includes('@'))return showToast('Email invalide','#e87070');
+  await sb.from('clients').update({email:val}).eq('id',state.client.id);
+  state.client.email=val;
+  showToast('✅ Email enregistré !','#8fc98a');
 }
 
 function printQR(){
-  const div=document.getElementById('qr-div-'+state.client.id);
-  const canvas=div?.querySelector('canvas');
+  var div=document.getElementById('qr-div-'+state.client.id);
+  var canvas=div&&div.querySelector('canvas');
   if(!canvas)return;
-  const win=window.open('','_blank');
+  var win=window.open('','_blank');
   win.document.write('<html><head><title>Carte — '+state.client.nom+'</title>'+
     '<style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif}'+
     '.card{border:2px solid #c8956c;border-radius:16px;padding:24px;text-align:center;width:280px}</style></head>'+
@@ -340,21 +390,17 @@ function printQR(){
     '<div style="font-size:16px;font-weight:bold;margin-top:12px">'+state.client.nom+'</div>'+
     '<div style="font-size:11px;color:#aaa;margin-top:6px">Présentez ce QR code en caisse</div>'+
     '</div></body></html>');
-  win.document.close();win.print();
+  win.document.close();
+  win.print();
 }
-async function saveEmail(){
-  const email=document.getElementById('client-email')?.value?.trim();
-  if(!email||!email.includes('@'))return showToast('Email invalide','#e87070');
-  await sb.from('clients').update({email}).eq('id',state.client.id);
-  state.client.email=email;
-  showToast('✅ Email enregistré !','#8fc98a');
-}
-  
+
 function showToast(msg,color){
   color=color||'#8fc98a';
-  state.toast={msg,color};render();
-  setTimeout(()=>{state.toast=null;render();},3000);
+  state.toast={msg:msg,color:color};
+  render();
+  setTimeout(function(){state.toast=null;render();},3000);
 }
+
 render();
 </script>
 </body>

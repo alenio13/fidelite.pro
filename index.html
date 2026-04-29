@@ -1029,8 +1029,12 @@ Object.entries(statsCaissier).forEach(([nom,s])=>{
     '<div style="background:#2a2a3e;border:1px solid #3a3a50;border-radius:14px;padding:14px;font-size:12px;color:#666;line-height:1.7">'+
     '💡 Le mot de passe est stocké de façon sécurisée dans votre base de données.</div>';
     html+='<div style="background:#2a2a3e;border:1px solid rgba(126,200,126,.3);border-radius:16px;padding:16px;margin-top:16px">'+
-'<div class="section-title">Offrir des points à tous les clients</div>'+
-'<div style="font-size:12px;color:#888;margin-bottom:12px">'+
+'<div class="section-title">Récompense inscription email</div>'+
+'<div style="font-size:12px;color:#888;margin-bottom:12px">Points offerts automatiquement quand un client renseigne son email pour la première fois.</div>'+
+'<div style="margin-bottom:10px"><div style="font-size:11px;color:#888;margin-bottom:4px">POINTS À OFFRIR</div>'+
+'<input class="input" type="number" id="offre-points" placeholder="Ex: 50" style="margin-bottom:0"></div>'+
+'<button onclick="sauvegarderPointsEmail()" style="width:100%;background:rgba(126,200,126,.15);border:1px solid rgba(126,200,126,.3);color:#7ec87e;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">💾 Enregistrer</button>'+
+'<div style="font-size:12px;color:#555;margin-top:10px">'+(state.allClients||[]).filter(c=>c.email).length+' client'+(((state.allClients||[]).filter(c=>c.email).length)>1?'s ont':'a')+' renseigné leur email</div>';
 (state.allClients||[]).filter(c=>c.email).length+' client'+(((state.allClients||[]).filter(c=>c.email).length)>1?'s':'')+ ' avec email enregistré</div>'+
 '<div style="margin-bottom:10px"><div style="font-size:11px;color:#888;margin-bottom:4px">POINTS À OFFRIR</div>'+
 '<input class="input" type="number" id="offre-points" placeholder="Ex: 50" style="margin-bottom:0"></div>'+
@@ -1451,28 +1455,11 @@ async function refuserVip(demandeId){
   document.getElementById('pwd-nouveau').value='';
   document.getElementById('pwd-confirm').value='';
 }
-  async function offrirPointsTous(){
+  async function sauvegarderPointsEmail(){
   const pts=parseInt(document.getElementById('offre-points')?.value)||0;
-  const msg=document.getElementById('offre-message')?.value?.trim()||'Offre spéciale';
   if(!pts||pts<=0)return showToast('Entrez un nombre de points','#e87070');
-  const clientsAvecEmail=(state.allClients||[]).filter(c=>c.email);
-  if(!clientsAvecEmail.length)return showToast('Aucun client avec email','#e87070');
-  if(!confirm('Offrir '+pts+' pts à '+clientsAvecEmail.length+' client(s) ?'))return;
-  let count=0;
-  for(const c of clientsAvecEmail){
-    const newPts=(c.points||0)+pts;
-    await sb.from('clients').update({points:newPts}).eq('id',c.id);
-    await sb.from('transactions').insert({
-      client_id:c.id,
-      label:'🎁 '+msg,
-      points:pts,
-      type:'bonus',
-      caissier_nom:'Patron'
-    });
-    count++;
-  }
-  showToast('✅ '+pts+' pts offerts à '+count+' clients !','#8fc98a');
-  await loadPatronData();render();
+  await sb.from('config').upsert({cle:'points_email',valeur:String(pts)},{onConflict:'cle'});
+  showToast('✅ Récompense email enregistrée : +'+pts+' pts !','#8fc98a');
 }
 function showToast(msg,color){
   color=color||'#8fc98a';

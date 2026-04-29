@@ -269,11 +269,18 @@ function renderCardTab(c,level,nextLevel,isVip){
 
   // Bloc email
   html+='<div style="background:#2a2a3e;border:1px solid #3a3a50;border-radius:14px;padding:14px 16px;margin-top:14px">'+
-    '<div class="section-title">Mon email</div>'+
-    '<div style="font-size:12px;color:#888;margin-bottom:10px">Renseignez votre email pour recevoir les offres exclusives !</div>'+
-    '<div style="display:flex;gap:8px">'+
-    '<input class="input" type="email" id="client-email" placeholder="votre@email.com" value="'+(c.email||'')+'" style="margin-bottom:0;flex:1">'+
-    '<button onclick="saveEmail()" style="background:#e8a87c;border:none;color:#0a0a0a;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer">✓</button></div></div>';
+'<div class="section-title">Mon email</div>'+
+(c.email?
+  '<div style="display:flex;align-items:center;gap:8px">'+
+  '<span style="font-size:18px">✅</span>'+
+  '<div><div style="font-size:13px;color:#7ec87e;font-weight:600">'+c.email+'</div>'+
+  '<div style="font-size:11px;color:#666;margin-top:2px">Email enregistré — vous recevrez les offres exclusives</div></div></div>'
+:
+  '<div style="font-size:12px;color:#888;margin-bottom:10px">Renseignez votre email pour recevoir les offres exclusives !</div>'+
+  '<div style="display:flex;gap:8px">'+
+  '<input class="input" type="email" id="client-email" placeholder="votre@email.com" style="margin-bottom:0;flex:1">'+
+  '<button onclick="saveEmail()" style="background:#e8a87c;border:none;color:#0a0a0a;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer">✓</button></div>')+
+'</div>';
 
   return html;
 }

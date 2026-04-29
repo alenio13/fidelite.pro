@@ -231,6 +231,12 @@ function renderCardTab(c,level,nextLevel,isVip){
     '<div id="qr-div-'+c.id+'" class="qr-div"></div>'+
     '<div style="font-size:12px;color:#888;text-align:center;line-height:1.6">Montrez ce QR code au caissier<br>pour être identifié instantanément</div>'+
     '<button onclick="printQR()" style="background:#2a2a3e;border:1px solid #3a3a50;color:#e8a87c;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer">🖨️ Imprimer ma carte</button></div>';
+  '<div style="background:#2a2a3e;border:1px solid #3a3a50;border-radius:14px;padding:14px 16px;margin-top:14px;width:100%">'+
+'<div class="section-title">Mon email</div>'+
+'<div style="font-size:12px;color:#888;margin-bottom:10px">Renseignez votre email pour recevoir les offres exclusives !</div>'+
+'<div style="display:flex;gap:8px">'+
+'<input class="input" type="email" id="client-email" placeholder="votre@email.com" value="'+(state.client.email||'')+'" style="margin-bottom:0;flex:1">'+
+'<button onclick="saveEmail()" style="background:#e8a87c;border:none;color:#0a0a0a;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer">✓</button></div></div>';
 
   return html;
 }
@@ -338,7 +344,14 @@ function printQR(){
     '</div></body></html>');
   win.document.close();win.print();
 }
-
+async function saveEmail(){
+  const email=document.getElementById('client-email')?.value?.trim();
+  if(!email||!email.includes('@'))return showToast('Email invalide','#e87070');
+  await sb.from('clients').update({email}).eq('id',state.client.id);
+  state.client.email=email;
+  showToast('✅ Email enregistré !','#8fc98a');
+}
+  
 function showToast(msg,color){
   color=color||'#8fc98a';
   state.toast={msg,color};render();

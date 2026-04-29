@@ -89,7 +89,7 @@ body{background:#1e1e2e;color:#f5f2ee;font-family:'Helvetica Neue',sans-serif;mi
 const SUPABASE_URL = 'https://tgrqfrijwjonrehixgre.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Dk_GsamMzY1KRRIELRxngQ_xsH1Xxkr';
 const SHOP_NAME    = "La craquante de lesigny";
-const PATRON_PWD   = "patron2024";
+let PATRON_PWD = "patron2024"; // sera remplacé par la valeur Supabase
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const LEVELS=[
@@ -225,6 +225,12 @@ function generateQR(clientId){
     if(!div||div.querySelector('canvas'))return;
     new QRCode(div,{text:'FL-'+clientId,width:180,height:180,colorDark:'#000000',colorLight:'#ffffff'});
   },100);
+}
+  async function loadConfig(){
+  const {data}=await sb.from('config').select('*');
+  (data||[]).forEach(c=>{
+    if(c.cle==='patron_pwd')PATRON_PWD=c.valeur;
+  });
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
@@ -902,7 +908,7 @@ async function selectPatronClient(clientId,clientJson){
 
 function renderPatron(){
   if(state.selectedClient)return renderPatronClientDetail();
-  const PTABS=[{id:'stats',l:'📊 Stats'},{id:'produits',l:'🛍️ Produits'},{id:'recompenses',l:'🎁 Récomp.'},{id:'clients',l:'👥 Clients'},{id:'caissiers',l:'🏪 Caissiers'},{id:'activite',l:'📋 Activité'}];
+  const PTABS=[{id:'stats',l:'📊 Stats'},{id:'produits',l:'🛍️ Produits'},{id:'recompenses',l:'🎁 Récomp.'},{id:'clients',l:'👥 Clients'},{id:'caissiers',l:'🏪 Caissiers'},{id:'activite',l:'📋 Activité'},{id:'config',l:'⚙️ Config'}];
   const txEarn=(state.allTransactions||[]).filter(t=>t.type==='earn'||t.type==='bonus');
   const totalPts=txEarn.reduce((s,t)=>s+(t.points||0),0);
   const statsCaissier={};
@@ -1017,6 +1023,16 @@ Object.entries(statsCaissier).forEach(([nom,s])=>{
     if(!(state.allTransactions||[]).length)html+='<div class="empty">Aucune activité</div>';
     html+='</div>';
   }
+  if(state.patronTab==='config'){
+  html+='<div style="background:#2a2a3e;border:1px solid #3a3a50;border-radius:16px;padding:16px;margin-bottom:16px">'+
+    '<div class="section-title">Changer le mot de passe patron</div>'+
+    '<input class="input" type="password" id="pwd-actuel" placeholder="Mot de passe actuel">'+
+    '<input class="input" type="password" id="pwd-nouveau" placeholder="Nouveau mot de passe">'+
+    '<input class="input" type="password" id="pwd-confirm" placeholder="Confirmer le nouveau mot de passe">'+
+    '<button onclick="changerMotDePasse()" style="width:100%;background:rgba(249,208,86,.15);border:1px solid rgba(249,208,86,.3);color:#f9d056;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">Changer le mot de passe</button></div>'+
+    '<div style="background:#2a2a3e;border:1px solid #3a3a50;border-radius:14px;padding:14px;font-size:12px;color:#666;line-height:1.7">'+
+    '💡 Le mot de passe est stocké de façon sécurisée dans votre base de données.</div>';
+}
   return html;
 }
 
@@ -1415,12 +1431,27 @@ async function refuserVip(demandeId){
     return {data:null,error:e};
   }
 }
+  async function changerMotDePasse(){
+  const actuel=document.getElementById('pwd-actuel')?.value;
+  const nouveau=document.getElementById('pwd-nouveau')?.value;
+  const confirm=document.getElementById('pwd-confirm')?.value;
+  if(!actuel||!nouveau||!confirm)return showToast('Remplissez tous les champs','#e87070');
+  if(actuel!==PATRON_PWD)return showToast('Mot de passe actuel incorrect','#e87070');
+  if(nouveau!==confirm)return showToast('Les mots de passe ne correspondent pas','#e87070');
+  if(nouveau.length<6)return showToast('Mot de passe trop court (6 caractères min)','#e87070');
+  await sb.from('config').update({valeur:nouveau}).eq('cle','patron_pwd');
+  PATRON_PWD=nouveau;
+  showToast('✅ Mot de passe changé !','#8fc98a');
+  document.getElementById('pwd-actuel').value='';
+  document.getElementById('pwd-nouveau').value='';
+  document.getElementById('pwd-confirm').value='';
+}
 function showToast(msg,color){
   color=color||'#8fc98a';
   state.toast={msg,color};render();
   setTimeout(()=>{state.toast=null;render();},3500);
 }
-render();
+loadConfig().then(()=>render());
 </script>
 </body>
 </html>

@@ -236,10 +236,6 @@ function generateQR(clientId){
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function render(){
   const root=document.getElementById('root');
-  if(!SUPABASE_URL||SUPABASE_URL==='https://tgrqfrijwjonrehixgre.supabase.co'){
-  root.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:24px;text-align:center"><div style="font-size:40px">⚙️</div><div style="font-size:18px;font-weight:700;color:#e8a87c">Configuration requise</div><div style="font-size:13px;color:#888">L\'application n\'est pas encore configurée.<br>Contactez votre administrateur.</div></div>';
-  return;
-}
   if(state.scanning){root.innerHTML=renderScanner();return;}
   if(state.view==='login'){root.innerHTML=renderLogin();return;}
   let html=(state.toast?'<div class="toast" style="border:1px solid '+state.toast.color+'77;color:'+state.toast.color+'">'+state.toast.msg+'</div>':'')+

@@ -373,13 +373,33 @@ function renderHistoryTab(){
 }
 
 async function saveEmail(){
-  var email=document.getElementById('client-email');
-  if(!email)return;
-  var val=email.value.trim();
+  var emailInput=document.getElementById('client-email');
+  if(!emailInput)return;
+  var val=emailInput.value.trim();
   if(!val||!val.includes('@'))return showToast('Email invalide','#e87070');
+  // Récupérer les points à offrir depuis config
+  const {data:config}=await sb.from('config').select('valeur').eq('cle','points_email').single();
+  const ptsEmail=config?parseInt(config.valeur)||0:0;
+  // Enregistrer l'email
   await sb.from('clients').update({email:val}).eq('id',state.client.id);
   state.client.email=val;
-  showToast('✅ Email enregistré !','#8fc98a');
+  // Offrir les points si configuré
+  if(ptsEmail>0){
+    const newPts=(state.client.points||0)+ptsEmail;
+    await sb.from('clients').update({points:newPts}).eq('id',state.client.id);
+    await sb.from('transactions').insert({
+      client_id:state.client.id,
+      label:'📧 Bienvenue ! Bonus inscription email',
+      points:ptsEmail,
+      type:'bonus',
+      caissier_nom:'Système'
+    });
+    state.client.points=newPts;
+    showToast('✅ Email enregistré ! +'+ptsEmail+' pts offerts !','#8fc98a');
+  } else {
+    showToast('✅ Email enregistré !','#8fc98a');
+  }
+  render();
 }
 
 function printQR(){

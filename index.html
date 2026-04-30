@@ -1533,15 +1533,15 @@ async function envoyerOffreEmail(){
     }
     count++;
   }
-  async function sauvegarderVipBonusDefaut(){
+  showToast('✅ Email envoyé à '+count+' clients !','#8fc98a');
+  await loadPatronData();render();
+}
+   async function sauvegarderVipBonusDefaut(){
   const val=parseInt(document.getElementById('vip-bonus-defaut')?.value)||10;
   await sb.from('config').upsert({cle:'vip_bonus_defaut',valeur:String(val)},{onConflict:'cle'});
   state.vipBonusDefaut=val;
   showToast('✅ Bonus VIP par défaut : +'+val+'%','#ffd700');
   render();
-}
-  showToast('✅ Email envoyé à '+count+' clients !','#8fc98a');
-  await loadPatronData();render();
 }
 function showToast(msg,color){
   color=color||'#8fc98a';

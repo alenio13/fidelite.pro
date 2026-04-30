@@ -1466,6 +1466,59 @@ async function refuserVip(demandeId){
     state.pointsEmail=pts;
 render();
 }
+  async function envoyerEmail(destinataire, nom, sujet, contenu){
+  const {data:config}=await sb.from('config').select('*');
+  const cfg={};
+  (config||[]).forEach(c=>{cfg[c.cle]=c.valeur;});
+  if(!cfg.brevo_api_key)return;
+  await fetch('https://api.brevo.com/v3/smtp/email',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'api-key':cfg.brevo_api_key
+    },
+    body:JSON.stringify({
+      sender:{name:cfg.brevo_sender_nom||SHOP_NAME,email:cfg.brevo_sender_email},
+      to:[{email:destinataire,name:nom}],
+      subject:sujet,
+      htmlContent:contenu
+    })
+  });
+}
+
+async function envoyerOffreEmail(){
+  const sujet=document.getElementById('offre-sujet')?.value?.trim();
+  const message=document.getElementById('offre-message-email')?.value?.trim();
+  const pts=parseInt(document.getElementById('offre-points-email')?.value)||0;
+  if(!sujet||!message)return showToast('Remplissez le sujet et le message','#e87070');
+  const clientsAvecEmail=(state.allClients||[]).filter(c=>c.email);
+  if(!clientsAvecEmail.length)return showToast('Aucun client avec email','#e87070');
+  if(!confirm('Envoyer un email à '+clientsAvecEmail.length+' client(s) ?'))return;
+  let count=0;
+  for(const c of clientsAvecEmail){
+    const contenuHtml='<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px">'+
+      '<div style="background:#1e1e2e;border-radius:16px;padding:24px;color:#f5f2ee">'+
+      '<div style="font-size:22px;font-weight:700;color:#e8a87c;margin-bottom:4px">'+SHOP_NAME+'</div>'+
+      '<div style="font-size:12px;color:#888;margin-bottom:20px;text-transform:uppercase;letter-spacing:2px">Programme Fidélité</div>'+
+      '<div style="font-size:16px;margin-bottom:16px">Bonjour <strong>'+c.nom+'</strong>,</div>'+
+      '<div style="font-size:14px;color:#ddd;line-height:1.7;margin-bottom:20px">'+message+'</div>'+
+      (pts>0?'<div style="background:rgba(200,149,108,.2);border:1px solid rgba(200,149,108,.4);border-radius:12px;padding:14px;text-align:center;margin-bottom:20px">'+
+      '<div style="font-size:24px;font-weight:800;color:#e8a87c">+'+pts+' pts</div>'+
+      '<div style="font-size:12px;color:#aaa">offerts sur votre carte fidélité</div></div>':'')+
+      '<div style="font-size:12px;color:#666;margin-top:20px;border-top:1px solid #333;padding-top:16px">'+
+      'Vous recevez cet email car vous êtes membre du programme fidélité de '+SHOP_NAME+'.</div>'+
+      '</div></div>';
+    await envoyerEmail(c.email,c.nom,sujet,contenuHtml);
+    if(pts>0){
+      const newPts=(c.points||0)+pts;
+      await sb.from('clients').update({points:newPts}).eq('id',c.id);
+      await sb.from('transactions').insert({client_id:c.id,label:'📧 '+sujet+' (+'+pts+' pts)',points:pts,type:'bonus',caissier_nom:'Patron'});
+    }
+    count++;
+  }
+  showToast('✅ Email envoyé à '+count+' clients !','#8fc98a');
+  await loadPatronData();render();
+}
 function showToast(msg,color){
   color=color||'#8fc98a';
   state.toast={msg,color};render();

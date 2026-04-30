@@ -864,6 +864,8 @@ async function loadPatronData(){
   state.demandesVip=dv||[];
   const {data:pe}=await sb.from('config').select('valeur').eq('cle','points_email').single();
 state.pointsEmail=pe?parseInt(pe.valeur)||0:0;
+  const {data:pv}=await sb.from('config').select('valeur').eq('cle','vip_bonus_defaut').single();
+state.vipBonusDefaut=pv?parseInt(pv.valeur)||10:10;
   await archivageAuto(moisActuel);
   await loadProducts();
 }
@@ -1041,6 +1043,14 @@ Object.entries(statsCaissier).forEach(([nom,s])=>{
 '<input class="input" type="number" id="offre-points" placeholder="Ex: 50" style="margin-bottom:0"></div>'+
 '<button onclick="sauvegarderPointsEmail()" style="width:100%;background:rgba(126,200,126,.15);border:1px solid rgba(126,200,126,.3);color:#7ec87e;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">💾 Enregistrer</button>'+
 '<div style="background:#1e1e2e;border-radius:8px;padding:8px 12px;margin-top:10px;font-size:12px;color:#7ec87e">'+(state.allClients||[]).filter(c=>c.email).length+' client'+(((state.allClients||[]).filter(c=>c.email).length)>1?'s ont':'a')+' renseigné leur email</div>';
+ html+='<div style="background:#2a2a3e;border:1px solid rgba(255,215,0,.3);border-radius:16px;padding:16px;margin-top:16px">'+
+'<div class="section-title">★ Bonus VIP par défaut</div>'+
+'<div style="font-size:12px;color:#888;margin-bottom:12px">Appliqué automatiquement à chaque nouvelle acceptation VIP.</div>'+
+'<div style="background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.2);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#ffd700;font-weight:700">✓ Valeur actuelle : +'+(state.vipBonusDefaut||10)+'%</div>'+
+'<select id="vip-bonus-defaut" style="width:100%;background:#1e1e2e;border:1px solid rgba(255,215,0,.3);border-radius:10px;padding:12px;color:#ffd700;font-size:14px;margin-bottom:10px">'+
+[5,10,15,20,25,30,50].map(v=>'<option value="'+v+'" '+(state.vipBonusDefaut===v?'selected':'')+'>+'+v+'%</option>').join('')+
+'</select>'+
+'<button onclick="sauvegarderVipBonusDefaut()" style="width:100%;background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.3);color:#ffd700;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">💾 Enregistrer</button></div>';   
 '✓ Valeur actuelle : <strong>'+(state.pointsEmail||'Non configuré')+' pts</strong> offerts à l\'inscription</div>'+
 '<div style="font-size:12px;color:#555;margin-top:6px">'+   
 (state.allClients||[]).filter(c=>c.email).length+' client'+(((state.allClients||[]).filter(c=>c.email).length)>1?'s':'')+ ' avec email enregistré</div>'+
@@ -1440,7 +1450,7 @@ function printQR(){
   render();
 }
   async function accepterVip(demandeId,clientId,anniversaire){
-  await sb.from('clients').update({vip:true,vip_bonus:10,...(anniversaire?{anniversaire}:{})}).eq('id',clientId);
+  await sb.from('clients').update({vip:true,vip_bonus:state.vipBonusDefaut||10,...(anniversaire?{anniversaire}:{})}).eq('id',clientId);
   await sb.from('demandes_vip').update({statut:'accepte'}).eq('id',demandeId);
   showToast('★ Client passé en VIP !','#ffd700');
   await loadPatronData();render();
@@ -1531,6 +1541,13 @@ async function envoyerOffreEmail(){
     }
     count++;
   }
+  async function sauvegarderVipBonusDefaut(){
+  const val=parseInt(document.getElementById('vip-bonus-defaut')?.value)||10;
+  await sb.from('config').upsert({cle:'vip_bonus_defaut',valeur:String(val)},{onConflict:'cle'});
+  state.vipBonusDefaut=val;
+  showToast('✅ Bonus VIP par défaut : +'+val+'%','#ffd700');
+  render();
+}
   showToast('✅ Email envoyé à '+count+' clients !','#8fc98a');
   await loadPatronData();render();
 }

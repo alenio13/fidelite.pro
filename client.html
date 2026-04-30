@@ -123,14 +123,62 @@ function renderLogin(){
     '<div style="text-align:center;margin-bottom:20px">'+
     '<div style="font-size:40px;margin-bottom:8px">🎴</div>'+
     '<div style="font-size:18px;font-weight:700;color:#f5f2ee">Ma Carte Fidélité</div>'+
-    '<div style="font-size:12px;color:#888;margin-top:6px">Connectez-vous pour accéder à vos points</div></div>'+
+    '<div style="font-size:12px;color:#888;margin-top:6px">Connectez-vous ou créez votre compte</div></div>'+
+    // Connexion
+    '<div id="form-login">'+
     '<input class="input" type="tel" id="tel-input" placeholder="Votre numéro de téléphone">'+
     '<input class="input" type="password" id="pin-input" placeholder="Votre code PIN à 4 chiffres" maxlength="4">'+
     '<button onclick="loginClient()" class="btn-primary">Accéder à ma carte</button>'+
-    '<div style="text-align:center;margin-top:16px;font-size:12px;color:#666;line-height:1.7">'+
-    'Pas encore de compte ?<br><span style="color:#e8a87c">Demandez à votre caissier de vous inscrire</span></div></div>'+
+    '<div style="text-align:center;margin-top:14px">'+
+    '<button onclick="showFormInscription()" style="background:none;border:none;color:#e8a87c;font-size:13px;cursor:pointer">Première visite ? Créer mon compte →</button>'+
+    '</div></div>'+
+    // Inscription
+    '<div id="form-inscription" style="display:none">'+
+    '<div style="font-size:14px;color:#f5f2ee;font-weight:700;margin-bottom:14px;text-align:center">Créer mon compte</div>'+
+    '<input class="input" type="tel" id="tel-inscription" placeholder="Votre numéro de téléphone">'+
+    '<input class="input" type="password" id="pin-nouveau" placeholder="Choisissez un code PIN à 4 chiffres" maxlength="4">'+
+    '<input class="input" type="password" id="pin-confirm" placeholder="Confirmez votre code PIN" maxlength="4">'+
+    '<button onclick="creerCompteClient()" class="btn-primary">Créer mon compte</button>'+
+    '<div style="text-align:center;margin-top:14px">'+
+    '<button onclick="showFormLogin()" style="background:none;border:none;color:#888;font-size:13px;cursor:pointer">← Retour connexion</button>'+
+    '</div></div>'+
+    '</div>'+
     '<div style="font-size:11px;color:#444;text-align:center;max-width:280px">'+
     '💡 Ajoutez cette page à vos favoris pour y accéder rapidement</div></div>';
+}
+
+function showFormInscription(){
+  document.getElementById('form-login').style.display='none';
+  document.getElementById('form-inscription').style.display='block';
+}
+function showFormLogin(){
+  document.getElementById('form-login').style.display='block';
+  document.getElementById('form-inscription').style.display='none';
+}
+
+async function creerCompteClient(){
+  const tel=document.getElementById('tel-inscription')?.value?.trim();
+  const pin=document.getElementById('pin-nouveau')?.value?.trim();
+  const confirm=document.getElementById('pin-confirm')?.value?.trim();
+  if(!tel)return showToast('Entrez votre numéro de téléphone','#e87070');
+  if(!pin||pin.length!==4)return showToast('Le PIN doit faire 4 chiffres','#e87070');
+  if(pin!==confirm)return showToast('Les PIN ne correspondent pas','#e87070');
+  // Vérifier si le numéro existe (compte créé par caissière sans PIN)
+  const {data:existing}=await sb.from('clients').select('*').eq('telephone',tel).single();
+  if(existing&&existing.pin){
+    return showToast('Ce numéro a déjà un compte — connectez-vous','#e87070');
+  }
+  if(existing&&!existing.pin){
+    // Compte existe sans PIN — le client définit son PIN
+    await sb.from('clients').update({pin}).eq('id',existing.id);
+    state.client={...existing,pin};
+    state.loggedIn=true;
+    await Promise.all([loadProducts(),loadClientPoints(existing.id),loadTransactions(existing.id),loadRecompenses()]);
+    showToast('✅ Compte activé ! Bienvenue '+existing.nom+' !','#8fc98a');
+    render();
+  } else {
+    return showToast('Numéro non reconnu — demandez à votre caissier de vous inscrire','#e87070');
+  }
 }
 
 async function loginClient(){

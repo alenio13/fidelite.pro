@@ -469,8 +469,7 @@ function renderClientSearch(){
     '<div id="new-client-form" style="display:none;margin-top:12px">'+
     '<input class="input" type="text" id="new-nom" placeholder="Prénom et nom" style="margin-bottom:8px">'+
     '<input class="input" type="tel" id="new-tel" placeholder="Numéro de téléphone" style="margin-bottom:8px">'+
-    '<input class="input" type="password" id="new-pin" placeholder="Code PIN à 4 chiffres" maxlength="4">'+
-    '<button onclick="createClient()" class="btn-primary" style="margin-top:4px">Créer le compte</button></div></div>';
+    '<button onclick="createClient()" class="btn-primary" style="margin-top:4px">Créer le compte</button>'
 }
 
 function renderSummary(productItems,bonusItems,total){
@@ -582,10 +581,8 @@ async function searchClient(){
 async function createClient(){
   const nom=document.getElementById('new-nom')?.value?.trim();
   const tel=document.getElementById('new-tel')?.value?.trim();
-  const pin=document.getElementById('new-pin')?.value?.trim();
   if(!nom||!tel)return showToast('Remplissez nom et téléphone','#e87070');
-  if(!pin||pin.length!==4)return showToast('PIN doit faire 4 chiffres','#e87070');
-  const {data,error}=await sb.from('clients').insert({nom,telephone:tel,points:0,pin,niveau_actuel:'Bronze',recompense_niveau_recup:false}).select().single();
+const {data,error}=await sb.from('clients').insert({nom,telephone:tel,points:0,pin:null,niveau_actuel:'Bronze',recompense_niveau_recup:false}).select().single();
   if(error)return showToast('Numéro déjà utilisé','#e87070');
   await loadClient(data);showToast('✅ '+nom+' inscrit !','#8fc98a');render();
 }

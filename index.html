@@ -1044,7 +1044,17 @@ Object.entries(statsCaissier).forEach(([nom,s])=>{
 '<div style="margin-bottom:12px"><div style="font-size:11px;color:#888;margin-bottom:4px">MESSAGE (optionnel)</div>'+
 '<input class="input" type="text" id="offre-message" placeholder="Ex: Merci pour votre fidélité !" style="margin-bottom:0"></div>'+
 '<button onclick="offrirPointsTous()" style="width:100%;background:rgba(126,200,126,.15);border:1px solid rgba(126,200,126,.3);color:#7ec87e;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">🎁 Offrir les points</button></div>';
-}
+html+='<div style="background:#2a2a3e;border:1px solid rgba(200,149,108,.3);border-radius:16px;padding:16px;margin-top:16px">'+
+'<div class="section-title">📧 Envoyer un email aux clients</div>'+
+'<div style="font-size:12px;color:#888;margin-bottom:12px">'+(state.allClients||[]).filter(c=>c.email).length+' client(s) avec email</div>'+
+'<div style="margin-bottom:10px"><div style="font-size:11px;color:#888;margin-bottom:4px">SUJET</div>'+
+'<input class="input" id="offre-sujet" placeholder="Ex: Offre spéciale ce weekend !" style="margin-bottom:0"></div>'+
+'<div style="margin-bottom:10px"><div style="font-size:11px;color:#888;margin-bottom:4px">MESSAGE</div>'+
+'<textarea id="offre-message-email" placeholder="Votre message personnalisé..." style="width:100%;background:#1e1e2e;border:1px solid #4a4a60;border-radius:10px;padding:12px;color:#f5f2ee;font-size:13px;outline:none;min-height:80px;margin-bottom:0;resize:none"></textarea></div>'+
+'<div style="margin-bottom:12px"><div style="font-size:11px;color:#888;margin-bottom:4px">POINTS À OFFRIR (optionnel)</div>'+
+'<input class="input" type="number" id="offre-points-email" placeholder="0" style="margin-bottom:0"></div>'+
+'<button onclick="envoyerOffreEmail()" style="width:100%;background:rgba(200,149,108,.15);border:1px solid rgba(200,149,108,.3);color:#e8a87c;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">📧 Envoyer l\'email</button></div>';
+  }
   return html;
 }
 

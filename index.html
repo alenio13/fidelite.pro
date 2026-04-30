@@ -1051,11 +1051,6 @@ Object.entries(statsCaissier).forEach(([nom,s])=>{
 [5,10,15,20,25,30,50].map(v=>'<option value="'+v+'" '+(state.vipBonusDefaut===v?'selected':'')+'>+'+v+'%</option>').join('')+
 '</select>'+
 '<button onclick="sauvegarderVipBonusDefaut()" style="width:100%;background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.3);color:#ffd700;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">💾 Enregistrer</button></div>';   
-'<div style="margin-bottom:10px"><div style="font-size:11px;color:#888;margin-bottom:4px">POINTS À OFFRIR</div>'+
-'<input class="input" type="number" id="offre-points" placeholder="Ex: 50" style="margin-bottom:0"></div>'+
-'<div style="margin-bottom:12px"><div style="font-size:11px;color:#888;margin-bottom:4px">MESSAGE (optionnel)</div>'+
-'<input class="input" type="text" id="offre-message" placeholder="Ex: Merci pour votre fidélité !" style="margin-bottom:0"></div>'+
-'<button onclick="offrirPointsTous()" style="width:100%;background:rgba(126,200,126,.15);border:1px solid rgba(126,200,126,.3);color:#7ec87e;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">🎁 Offrir les points</button></div>';
 html+='<div style="background:#2a2a3e;border:1px solid rgba(200,149,108,.3);border-radius:16px;padding:16px;margin-top:16px">'+
 '<div class="section-title">📧 Envoyer un email aux clients</div>'+
 '<div style="font-size:12px;color:#888;margin-bottom:12px">'+(state.allClients||[]).filter(c=>c.email).length+' client(s) avec email</div>'+

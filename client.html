@@ -35,6 +35,23 @@ body{background:#1e1e2e;color:#f5f2ee;font-family:'Helvetica Neue',sans-serif;mi
 .qr-section{background:#2a2a3e;border:1px solid #3a3a50;border-radius:16px;padding:18px;margin-top:14px;display:flex;flex-direction:column;align-items:center;gap:10px}
 .qr-div{border-radius:12px;background:#fff;padding:10px;display:flex;align-items:center;justify-content:center}
 .vip-banner{background:linear-gradient(135deg,rgba(255,215,0,.2),rgba(255,165,0,.1));border:1px solid rgba(255,215,0,.4);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:16px}
+/* === 3D ANIMATED CARD === */
+.card-3d-stage{perspective:1500px;height:240px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.card-3d-client{width:100%;max-width:340px;aspect-ratio:1.6;position:relative;transform-style:preserve-3d;cursor:pointer;transition:transform .8s cubic-bezier(.4,.2,.2,1);animation:cardFloatC 6s ease-in-out infinite}
+.card-3d-client.flipped{transform:rotateY(180deg);animation:none}
+@keyframes cardFloatC{0%,100%{transform:translateY(0) rotateX(4deg) rotateY(-4deg)}50%{transform:translateY(-6px) rotateX(4deg) rotateY(-2deg)}}
+.card-face-c{position:absolute;inset:0;border-radius:20px;backface-visibility:hidden;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.card-front-c{padding:18px 20px;display:flex;flex-direction:column;justify-content:space-between;color:#f5f2ee}
+.card-back-c{transform:rotateY(180deg);padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.card-shine-c{position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.08) 50%,transparent 65%);animation:shineC 5s ease-in-out infinite;pointer-events:none}
+@keyframes shineC{0%,100%{transform:translateX(-30%)}50%{transform:translateX(30%)}}
+.card-flip-hint-c{text-align:center;font-size:10px;color:#666;letter-spacing:2px;text-transform:uppercase;margin:4px 0 14px;animation:hintBlinkC 2.4s infinite}
+@keyframes hintBlinkC{0%,100%{opacity:.4}50%{opacity:1}}
+.card-magstripe{position:absolute;top:18px;left:0;right:0;height:30px;background:#0a0a14}
+.qr-on-card{width:118px;height:118px;background:#fff;border-radius:8px;padding:6px;display:flex;align-items:center;justify-content:center;margin-top:24px;overflow:hidden}
+.qr-on-card canvas{width:100% !important;height:100% !important;image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+.card-chip{width:32px;height:24px;background:linear-gradient(135deg,#d4af37,#b8860b);border-radius:4px;position:relative}
+.card-chip::before{content:'';position:absolute;inset:3px;border-radius:2px;background:repeating-linear-gradient(0deg,rgba(0,0,0,.2),rgba(0,0,0,.2) 1px,transparent 1px,transparent 4px),repeating-linear-gradient(90deg,rgba(0,0,0,.2),rgba(0,0,0,.2) 1px,transparent 1px,transparent 4px)}
 </style>
 </head>
 <body>
@@ -292,30 +309,54 @@ function renderCardTab(c,level,nextLevel,isVip){
       '<div style="font-size:12px;color:#888">Ces points expirent dans moins de 30 jours.<br>Revenez nous voir pour les utiliser !</div></div>';
   }
 
-  // Carte visuelle
-  html+='<div class="card-visual" style="box-shadow:0 0 0 1px '+(isVip?'rgba(255,215,0,.3)':level.color+'33')+',0 20px 50px rgba(0,0,0,.6)">'+
-    '<div style="position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,'+(isVip?'rgba(255,215,0,.1)':level.color+'18')+' 0%,transparent 70%);pointer-events:none"></div>'+
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">'+
-    '<div>'+
-    '<div style="font-size:9px;letter-spacing:3px;color:'+(isVip?'#ffd700':level.color)+';text-transform:uppercase;margin-bottom:3px">Carte Fidélité'+(isVip?' ★ VIP':'')+'</div>'+
-    '<div style="font-size:16px;font-weight:700;font-family:Georgia,serif;color:#f5f2ee">'+SHOP_NAME+'</div></div>'+
-    '<span class="'+getBadgeClass(c.points)+'">'+level.name+'</span></div>'+
-    '<div style="font-size:48px;font-weight:800;color:'+(isVip?'#ffd700':level.color)+';letter-spacing:-3px;line-height:1;text-align:center;margin-bottom:4px">'+c.points.toLocaleString()+'</div>'+
-    '<div style="font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;text-align:center">points globaux</div>'+
-    '<div class="progress-bar"><div class="progress-fill" style="width:'+prog+'%;background:linear-gradient(90deg,'+(isVip?'rgba(255,215,0,.6),#ffd700':level.color+'66,'+level.color)+')"></div></div>'+
-    (nextLevel?'<div style="font-size:11px;color:#666;text-align:right;margin-bottom:14px">'+(nextLevel.min-c.points)+' pts avant '+nextLevel.name+'</div>':'<div style="margin-bottom:14px"></div>')+
-    '<div style="display:flex;justify-content:space-between;align-items:center">'+
-    '<div>'+
-    '<div style="font-size:9px;color:#555;letter-spacing:2px;text-transform:uppercase">Titulaire</div>'+
-    '<div style="font-size:14px;letter-spacing:1px;margin-top:2px;color:#ccc">'+c.nom+'</div></div>'+
-    '<div style="font-family:monospace;font-size:10px;color:#444">'+c.telephone+'</div></div></div>';
+  // Carte 3D animée (recto = infos, verso = QR code)
+  var accentColor=isVip?'#ffd700':level.color;
+  var accentRgba=isVip?'rgba(255,215,0,.35)':level.color+'55';
+  var bgFront=isVip?'linear-gradient(135deg,#3a2e14 0%,#2a1e14 50%,#1e1e2e 100%)':'linear-gradient(135deg,#2a1e14 0%,#1e1e2e 100%)';
+  var bgBack='linear-gradient(135deg,#1e1e2e 0%,#2a1e14 100%)';
+  html+='<div class="card-3d-stage">'+
+    '<div class="card-3d-client" onclick="this.classList.toggle(\'flipped\')">'+
+      // RECTO
+      '<div class="card-face-c card-front-c" style="background:'+bgFront+';box-shadow:0 0 0 1px '+accentRgba+',0 20px 50px rgba(0,0,0,.6)">'+
+        '<div class="card-shine-c"></div>'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2">'+
+          '<div>'+
+            '<div style="font-size:9px;letter-spacing:3px;color:'+accentColor+';text-transform:uppercase;margin-bottom:3px">Carte Fidélité'+(isVip?' ★ VIP':'')+'</div>'+
+            '<div style="font-size:15px;font-weight:700;font-family:Georgia,serif;color:#f5f2ee">'+SHOP_NAME+'</div>'+
+          '</div>'+
+          '<span class="'+getBadgeClass(c.points)+'">'+level.name+'</span>'+
+        '</div>'+
+        '<div style="position:relative;z-index:2"><div class="card-chip"></div></div>'+
+        '<div style="position:relative;z-index:2">'+
+          '<div style="font-size:34px;font-weight:800;color:'+accentColor+';letter-spacing:-1px;line-height:1;font-family:monospace">'+c.points.toLocaleString()+' <span style="font-size:14px;letter-spacing:2px">PTS</span></div>'+
+          '<div class="progress-bar"><div class="progress-fill" style="width:'+prog+'%;background:linear-gradient(90deg,'+(isVip?'rgba(255,215,0,.6),#ffd700':level.color+'66,'+level.color)+')"></div></div>'+
+          '<div style="display:flex;justify-content:space-between;align-items:end;font-size:10px;color:#888;margin-top:4px">'+
+            '<div>'+
+              '<div style="font-size:8px;color:#555;letter-spacing:2px;text-transform:uppercase">Titulaire</div>'+
+              '<div style="font-size:12px;letter-spacing:1px;margin-top:2px;color:#ccc;text-transform:uppercase">'+c.nom+'</div>'+
+            '</div>'+
+            '<div style="text-align:right">'+
+              (nextLevel?'<div style="font-size:9px;color:#666">'+(nextLevel.min-c.points)+' pts → '+nextLevel.name+'</div>':'<div style="font-size:9px;color:'+accentColor+'">★ Niveau max</div>')+
+              '<div style="font-family:monospace;font-size:9px;color:#444;margin-top:2px">'+c.telephone+'</div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      // VERSO
+      '<div class="card-face-c card-back-c" style="background:'+bgBack+';box-shadow:0 0 0 1px '+accentRgba+',0 20px 50px rgba(0,0,0,.6)">'+
+        '<div class="card-magstripe"></div>'+
+        '<div id="qr-div-'+c.id+'" class="qr-on-card"></div>'+
+        '<div style="font-size:9px;color:'+accentColor+';letter-spacing:3px;text-transform:uppercase;text-align:center;font-weight:600">✦ Scan en caisse ✦</div>'+
+        '<div style="font-size:10px;color:#666;text-align:center;letter-spacing:.5px">Présentez ce QR au caissier</div>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+  html+='<div class="card-flip-hint-c">↻ Cliquer la carte pour afficher le QR</div>';
 
-  // QR Code
-  html+='<div class="qr-section">'+
-    '<div class="section-title">Mon QR code caisse</div>'+
-    '<div id="qr-div-'+c.id+'" class="qr-div"></div>'+
-    '<div style="font-size:12px;color:#888;text-align:center;line-height:1.6">Montrez ce QR code au caissier<br>pour être identifié instantanément</div>'+
-    '<button onclick="printQR()" style="background:#2a2a3e;border:1px solid #3a3a50;color:#e8a87c;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer">🖨️ Imprimer ma carte</button></div>';
+  // Bouton imprimer
+  html+='<div style="text-align:center;margin-bottom:14px">'+
+    '<button onclick="printQR()" style="background:#2a2a3e;border:1px solid #3a3a50;color:#e8a87c;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer">🖨️ Imprimer ma carte</button>'+
+  '</div>';
 
   // Bloc email
   html+='<div style="background:#2a2a3e;border:1px solid #3a3a50;border-radius:14px;padding:14px 16px;margin-top:14px">'+

@@ -160,11 +160,48 @@ async function loadRecompenses(){
   state.recompenseVip=(rv&&rv[0])||null;
 }
 
+// === SÉCURITÉ QR ===
+// Génère un token aléatoire cryptographiquement sûr (32 hex chars)
+function generateRandomToken(){
+  const arr = new Uint8Array(16);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// Génère un nouveau token, le stocke en DB et dans state.client
+async function refreshQrToken(){
+  if(!state.client||!state.client.id) return;
+  const token = generateRandomToken();
+  const expires = new Date(Date.now() + 24*3600*1000); // 24h de validité
+  const {error} = await sb.from('clients').update({
+    qr_token: token,
+    qr_token_expires_at: expires.toISOString()
+  }).eq('id', state.client.id);
+  if(error){
+    console.error('refreshQrToken failed:', error);
+    return;
+  }
+  state.client.qr_token = token;
+  state.client.qr_token_expires_at = expires.toISOString();
+}
+
 function generateQR(clientId){
   setTimeout(function(){
     const div=document.getElementById('qr-div-'+clientId);
-    if(!div||div.querySelector('canvas'))return;
-    new QRCode(div,{text:'FL-'+clientId,width:180,height:180,colorDark:'#000000',colorLight:'#ffffff'});
+    if(!div) return;
+    // Si on a déjà un canvas et un token identique, ne pas régénérer
+    const currentToken = div.dataset.token;
+    if(div.querySelector('canvas') && currentToken === state.client.qr_token) return;
+    // Reset si token différent (rotation)
+    div.innerHTML = '';
+    div.dataset.token = state.client.qr_token || '';
+    if(!state.client.qr_token){
+      div.innerHTML = '<div style="color:#666;font-size:11px;text-align:center;padding:20px">Génération...</div>';
+      return;
+    }
+    // Format sécurisé : FL|{id}|{token}
+    const payload = 'FL|' + clientId + '|' + state.client.qr_token;
+    new QRCode(div,{text:payload,width:180,height:180,colorDark:'#000000',colorLight:'#ffffff'});
   },100);
 }
 
@@ -256,6 +293,7 @@ async function creerCompteClient(){
     await sb.from('clients').update({pin}).eq('id',existing.id);
     state.client={...existing,pin};
     state.loggedIn=true;
+    await refreshQrToken();
     await Promise.all([loadProducts(),loadClientPoints(existing.id),loadTransactions(existing.id),loadRecompenses()]);
     showToast('✅ Compte activé ! Bienvenue '+existing.nom+' !','#8fc98a');
     render();
@@ -272,12 +310,22 @@ async function loginClient(){
   if(data){
     state.client=data;
     state.loggedIn=true;
+    await refreshQrToken();
     await Promise.all([loadProducts(),loadClientPoints(data.id),loadTransactions(data.id),loadRecompenses()]);
     render();
   } else {
     showToast('Numéro ou PIN incorrect','#e87070');
   }
 }
+
+// Auto-refresh du token toutes les 12h tant que le client reste connecté
+setInterval(function(){
+  if(state.loggedIn && state.client){
+    refreshQrToken().then(function(){
+      if(state.tab==='card') render();
+    });
+  }
+}, 12*3600*1000);
 
 function logout(){
   state.client=null;

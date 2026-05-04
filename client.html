@@ -215,8 +215,18 @@ function renderLogin(){
     '<button onclick="showFormLogin()" style="background:none;border:none;color:#888;font-size:13px;cursor:pointer">← Retour connexion</button>'+
     '</div></div>'+
     '</div>'+
-    '<div style="font-size:11px;color:#444;text-align:center;max-width:280px">'+
-   '💡 Ajoutez cette page à vos favoris pour y accéder rapidement</div></div>'+
+    // Bouton "Installer l'app" — affiché si PWA installable et pas déjà installée
+    '<div id="install-promo" style="display:none;width:100%;max-width:380px;background:linear-gradient(135deg,rgba(200,149,108,.12),rgba(200,149,108,.06));border:1px solid rgba(200,149,108,.35);border-radius:14px;padding:14px 16px;margin-top:4px">'+
+      '<div style="display:flex;align-items:center;gap:12px">'+
+        '<div style="width:38px;height:38px;border-radius:8px;background:rgba(200,149,108,.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📲</div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:13px;color:#f5f2ee;font-weight:700;margin-bottom:2px">Installer Ma Carte</div>'+
+          '<div style="font-size:11px;color:#888;line-height:1.4">Accès rapide depuis l\'écran d\'accueil, sans navigateur</div>'+
+        '</div>'+
+        '<button id="install-btn" onclick="handleInstallClick()" style="background:#c8956c;color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Installer</button>'+
+      '</div>'+
+    '</div>'+
+    '</div>'+
 '<div style="text-align:center;margin-top:16px;font-size:11px;color:#888">Propulsé par <span style="color:#c8956c;font-weight:600;letter-spacing:1px">FidelioPro</span></div>';
 }
 
@@ -583,6 +593,119 @@ function showToast(msg,color){
   render();
   setTimeout(function(){state.toast=null;render();},3000);
 }
+
+// === PWA INSTALLATION ===
+let deferredInstallPrompt=null;
+
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+}
+function isIOS(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+function isAndroid(){
+  return /Android/i.test(navigator.userAgent);
+}
+
+// Capter le prompt d'install Android avant qu'il s'affiche tout seul
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  showInstallPromo();
+});
+
+// Détecter si l'app vient d'être installée
+window.addEventListener('appinstalled',function(){
+  deferredInstallPrompt=null;
+  hideInstallPromo();
+});
+
+function showInstallPromo(){
+  // Pas afficher si déjà installé
+  if(isStandalone()) return;
+  // Pas afficher si l'utilisateur a déjà refusé récemment
+  var dismissed=localStorage.getItem('install_dismissed');
+  if(dismissed){
+    var diff=Date.now()-parseInt(dismissed,10);
+    if(diff<7*24*3600*1000) return; // 7 jours de pause après refus
+  }
+  var el=document.getElementById('install-promo');
+  if(el) el.style.display='block';
+}
+function hideInstallPromo(){
+  var el=document.getElementById('install-promo');
+  if(el) el.style.display='none';
+}
+
+function handleInstallClick(){
+  if(deferredInstallPrompt){
+    // Android Chrome / desktop Chrome — prompt natif
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(function(choice){
+      if(choice.outcome==='accepted'){
+        showToast('✅ App installée !','#8fc98a');
+        hideInstallPromo();
+      } else {
+        localStorage.setItem('install_dismissed',Date.now().toString());
+        hideInstallPromo();
+      }
+      deferredInstallPrompt=null;
+    });
+  } else if(isIOS()){
+    // iOS Safari — pas de prompt natif, on affiche les instructions
+    showIOSInstallModal();
+  } else {
+    // Autre cas — instructions génériques
+    showToast('Utilise le menu de ton navigateur pour ajouter à l\'écran d\'accueil','#c8956c');
+  }
+}
+
+function showIOSInstallModal(){
+  var modal=document.createElement('div');
+  modal.id='ios-install-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:0;animation:fadeIn .3s';
+  modal.innerHTML='<div style="background:#1e1e2e;border-radius:24px 24px 0 0;padding:28px 24px 32px;width:100%;max-width:480px;border-top:2px solid rgba(200,149,108,.4);position:relative">'+
+    '<button onclick="closeIOSInstallModal()" style="position:absolute;top:14px;right:14px;background:#2a2a3e;border:none;color:#888;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer">×</button>'+
+    '<div style="display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center">'+
+      '<img src="/icons/icon-192.png" alt="" style="width:72px;height:72px;border-radius:16px;box-shadow:0 12px 28px rgba(0,0,0,.5)">'+
+      '<div>'+
+        '<div style="font-size:17px;font-weight:700;color:#f5f2ee;margin-bottom:4px">Installer Ma Carte</div>'+
+        '<div style="font-size:13px;color:#888">Suivez ces 2 étapes simples</div>'+
+      '</div>'+
+      '<div style="width:100%;background:#2a2a3e;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px">'+
+        // Étape 1
+        '<div style="display:flex;align-items:center;gap:12px;text-align:left">'+
+          '<div style="width:32px;height:32px;border-radius:50%;background:rgba(200,149,108,.2);border:1px solid rgba(200,149,108,.4);display:flex;align-items:center;justify-content:center;color:#e8a87c;font-size:13px;font-weight:700;flex-shrink:0">1</div>'+
+          '<div style="flex:1;font-size:13px;color:#ccc">'+
+            'Touchez l\'icône <span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;background:#3a3a52;border-radius:6px;vertical-align:middle;margin:0 2px">'+
+              '<svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1v9M3 5l4-4 4 4M2 11v3a1 1 0 001 1h8a1 1 0 001-1v-3" stroke="#5e9eff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'+
+            '</span> Partager dans la barre du bas Safari'+
+          '</div>'+
+        '</div>'+
+        // Étape 2
+        '<div style="display:flex;align-items:center;gap:12px;text-align:left">'+
+          '<div style="width:32px;height:32px;border-radius:50%;background:rgba(200,149,108,.2);border:1px solid rgba(200,149,108,.4);display:flex;align-items:center;justify-content:center;color:#e8a87c;font-size:13px;font-weight:700;flex-shrink:0">2</div>'+
+          '<div style="flex:1;font-size:13px;color:#ccc">Sélectionnez <strong style="color:#f5f2ee">"Sur l\'écran d\'accueil"</strong> puis Ajouter</div>'+
+        '</div>'+
+      '</div>'+
+      '<button onclick="closeIOSInstallModal()" style="background:#c8956c;color:#fff;border:none;border-radius:12px;padding:13px 28px;font-size:14px;font-weight:700;cursor:pointer;width:100%">J\'ai compris</button>'+
+    '</div>'+
+  '</div>';
+  document.body.appendChild(modal);
+}
+function closeIOSInstallModal(){
+  var m=document.getElementById('ios-install-modal');
+  if(m) m.remove();
+}
+
+// Au chargement : si iOS et pas installé, montrer la promo (pas de beforeinstallprompt sur iOS)
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    if(isIOS()&&!isStandalone()){
+      showInstallPromo();
+    }
+  },500);
+});
 
 render();
 </script>

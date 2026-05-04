@@ -231,7 +231,7 @@ function scanLoop(){
     scanCtx.drawImage(scanVideo,0,0);
     const img=scanCtx.getImageData(0,0,scanCanvas.width,scanCanvas.height);
     const code=jsQR(img.data,img.width,img.height);
-    if(code&&code.data.startsWith('FL-')){stopScan();handleQRScan(code.data);return;}
+    if(code&&(code.data.startsWith('FL|')||code.data.startsWith('FL-'))){stopScan();handleQRScan(code.data);return;}
   }
   scanAF=requestAnimationFrame(scanLoop);
 }
@@ -242,17 +242,40 @@ function stopScan(){
   render();
 }
 async function handleQRScan(qrData){
-  const clientId=qrData.replace('FL-','');
-  const {data}=await sb.from('clients').select('*').eq('id',clientId).single();
-  if(data){await loadClient(data);showToast('✅ '+data.nom+' identifié !','#8fc98a');render();}
-  else showToast('QR code non reconnu','#e87070');
+  // Format sécurisé attendu : FL|{id}|{token}
+  // Ancien format FL-{id} → rejeté (carte obsolète à régénérer côté client)
+  if(qrData.startsWith('FL|')){
+    const parts=qrData.split('|');
+    if(parts.length!==3){return showToast('QR code invalide','#e87070');}
+    const clientId=parts[1];
+    const token=parts[2];
+    const {data}=await sb.from('clients').select('*').eq('id',clientId).single();
+    if(!data){return showToast('Client non reconnu','#e87070');}
+    // Vérification du token
+    if(!data.qr_token || data.qr_token!==token){
+      return showToast('QR invalide — demandez au client de rafraîchir sa carte','#e87070');
+    }
+    // Vérification de l'expiration
+    if(data.qr_token_expires_at && new Date(data.qr_token_expires_at) < new Date()){
+      return showToast('QR expiré — demandez au client de se reconnecter','#e87070');
+    }
+    await loadClient(data);
+    showToast('✅ '+data.nom+' identifié !','#8fc98a');
+    render();
+    return;
+  }
+  // Ancien format non sécurisé — rejet avec message clair
+  if(qrData.startsWith('FL-')){
+    return showToast('Carte obsolète — le client doit se reconnecter pour mettre à jour son QR','#e87070');
+  }
+  showToast('QR code non reconnu','#e87070');
 }
 let barcodeBuffer='',barcodeTimer=null;
 document.addEventListener('keydown',e=>{
   if(state.view!=='cashier'||state.role!=='caissier')return;
   const active=document.activeElement;
   if(active&&(active.tagName==='INPUT'||active.tagName==='TEXTAREA'))return;
-  if(e.key==='Enter'){if(barcodeBuffer.startsWith('FL-'))handleQRScan(barcodeBuffer);barcodeBuffer='';}
+  if(e.key==='Enter'){if(barcodeBuffer.startsWith('FL|')||barcodeBuffer.startsWith('FL-'))handleQRScan(barcodeBuffer);barcodeBuffer='';}
   else if(e.key.length===1){barcodeBuffer+=e.key;clearTimeout(barcodeTimer);barcodeTimer=setTimeout(()=>{barcodeBuffer='';},200);}
 });
 function generateQR(clientId){

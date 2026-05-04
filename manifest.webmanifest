@@ -1,0 +1,33 @@
+{
+  "name": "Ma Carte Fidélité",
+  "short_name": "Ma Carte",
+  "description": "Votre carte de fidélité digitale — programme de récompenses sans appli à télécharger.",
+  "start_url": "/client.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1e1e2e",
+  "theme_color": "#1e1e2e",
+  "lang": "fr",
+  "categories": ["lifestyle", "shopping", "loyalty"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

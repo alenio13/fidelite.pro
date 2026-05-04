@@ -416,11 +416,6 @@ function renderCardTab(c,level,nextLevel,isVip){
   '</div>';
   html+='<div class="card-flip-hint-c">↻ Cliquer la carte pour afficher le QR</div>';
 
-  // Bouton imprimer
-  html+='<div style="text-align:center;margin-bottom:14px">'+
-    '<button onclick="printQR()" style="background:#2a2a3e;border:1px solid #3a3a50;color:#e8a87c;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer">🖨️ Imprimer ma carte</button>'+
-  '</div>';
-
   // Bloc email
   html+='<div style="background:#2a2a3e;border:1px solid #3a3a50;border-radius:14px;padding:14px 16px;margin-top:14px">'+
 '<div class="section-title">Mon email</div>'+
@@ -568,24 +563,6 @@ async function saveEmail(){
   render();
 }
 
-function printQR(){
-  var div=document.getElementById('qr-div-'+state.client.id);
-  var canvas=div&&div.querySelector('canvas');
-  if(!canvas)return;
-  var win=window.open('','_blank');
-  win.document.write('<html><head><title>Carte — '+state.client.nom+'</title>'+
-    '<style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif}'+
-    '.card{border:2px solid #c8956c;border-radius:16px;padding:24px;text-align:center;width:280px}</style></head>'+
-    '<body><div class="card">'+
-    '<div style="font-size:16px;font-weight:bold;color:#1a1410;margin-bottom:4px">'+SHOP_NAME+'</div>'+
-    '<div style="font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Carte Fidélité</div>'+
-    '<img src="'+canvas.toDataURL()+'" width="160" height="160">'+
-    '<div style="font-size:16px;font-weight:bold;margin-top:12px">'+state.client.nom+'</div>'+
-    '<div style="font-size:11px;color:#aaa;margin-top:6px">Présentez ce QR code en caisse</div>'+
-    '</div></body></html>');
-  win.document.close();
-  win.print();
-}
 
 function showToast(msg,color){
   color=color||'#8fc98a';

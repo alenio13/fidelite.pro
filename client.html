@@ -205,6 +205,73 @@ function generateQR(clientId){
   },100);
 }
 
+// === PARRAINAGE ===
+// Génère un code lisible (sans caractères ambigus 0/O/1/I/L)
+function generateCodeParrainage(){
+  const chars='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let code='';
+  const arr=new Uint8Array(6);
+  crypto.getRandomValues(arr);
+  for(let i=0;i<6;i++) code+=chars[arr[i]%chars.length];
+  return code;
+}
+
+// Garantit que le client a un code de parrainage en BDD (en génère un si manquant)
+async function ensureCodeParrainage(){
+  if(!state.client||!state.client.id) return;
+  if(state.client.code_parrainage) return; // déjà un code
+  // Tentatives avec retry en cas de collision (très improbable mais possible)
+  for(let attempt=0; attempt<5; attempt++){
+    const code=generateCodeParrainage();
+    const {data,error}=await sb.from('clients').update({code_parrainage:code}).eq('id',state.client.id).select().single();
+    if(!error && data){
+      state.client.code_parrainage=code;
+      return;
+    }
+    // Collision unique → on retry
+  }
+  console.error('Impossible de générer un code de parrainage unique');
+}
+
+// Récupère la config des points de parrainage (default 50)
+async function getPointsParrainage(){
+  const {data}=await sb.from('config').select('valeur').eq('cle','points_parrainage').single();
+  return data?parseInt(data.valeur,10)||50:50;
+}
+
+// Applique le bonus de parrainage : ajoute X pts au parrain ET au filleul + crée 2 transactions
+async function appliquerParrainage(filleul, codeParrain){
+  const codeNorm=(codeParrain||'').toUpperCase().trim();
+  if(!codeNorm) return {ok:false, msg:'Pas de code'};
+  // Trouver le parrain
+  const {data:parrain}=await sb.from('clients').select('*').eq('code_parrainage',codeNorm).single();
+  if(!parrain) return {ok:false, msg:'Code de parrainage inconnu'};
+  if(parrain.id===filleul.id) return {ok:false, msg:'Vous ne pouvez pas vous parrainer vous-même'};
+  if(filleul.parrain_id) return {ok:false, msg:'Vous avez déjà été parrainé'};
+  // Appliquer
+  const pts=await getPointsParrainage();
+  const newPtsParrain=(parrain.points||0)+pts;
+  const newPtsFilleul=(filleul.points||0)+pts;
+  await Promise.all([
+    sb.from('clients').update({points:newPtsParrain}).eq('id',parrain.id),
+    sb.from('clients').update({points:newPtsFilleul, parrain_id:parrain.id}).eq('id',filleul.id),
+    sb.from('transactions').insert({client_id:parrain.id, label:'🎁 Parrainage de '+filleul.nom, points:pts, type:'bonus', caissier_nom:'Système'}),
+    sb.from('transactions').insert({client_id:filleul.id, label:'🎁 Bienvenue par '+parrain.nom, points:pts, type:'bonus', caissier_nom:'Système'}),
+  ]);
+  filleul.points=newPtsFilleul;
+  filleul.parrain_id=parrain.id;
+  return {ok:true, pts:pts, parrain:parrain.nom};
+}
+
+// Lit le code ?ref= depuis l'URL (utilisé pour pré-remplir l'inscription)
+function getRefFromUrl(){
+  try{
+    const u=new URL(window.location.href);
+    const ref=u.searchParams.get('ref');
+    return ref?ref.toUpperCase().trim():'';
+  }catch(e){return '';}
+}
+
 function render(){
   const root=document.getElementById('root');
   let html='';
@@ -247,6 +314,7 @@ function renderLogin(){
     '<input class="input" type="tel" id="tel-inscription" placeholder="Votre numéro de téléphone">'+
     '<input class="input" type="password" id="pin-nouveau" placeholder="Choisissez un code PIN à 4 chiffres" maxlength="4">'+
     '<input class="input" type="password" id="pin-confirm" placeholder="Confirmez votre code PIN" maxlength="4">'+
+    '<input class="input" type="text" id="code-parrainage" placeholder="Code de parrainage (optionnel)" maxlength="6" style="text-transform:uppercase" value="'+getRefFromUrl()+'">'+
     '<button onclick="creerCompteClient()" class="btn-primary">Créer mon compte</button>'+
     '<div style="text-align:center;margin-top:14px">'+
     '<button onclick="showFormLogin()" style="background:none;border:none;color:#888;font-size:13px;cursor:pointer">← Retour connexion</button>'+
@@ -280,6 +348,7 @@ async function creerCompteClient(){
   const tel=document.getElementById('tel-inscription')?.value?.trim();
   const pin=document.getElementById('pin-nouveau')?.value?.trim();
   const confirm=document.getElementById('pin-confirm')?.value?.trim();
+  const codeParrain=(document.getElementById('code-parrainage')?.value||'').toUpperCase().trim();
   if(!tel)return showToast('Entrez votre numéro de téléphone','#e87070');
   if(!pin||pin.length!==4)return showToast('Le PIN doit faire 4 chiffres','#e87070');
   if(pin!==confirm)return showToast('Les PIN ne correspondent pas','#e87070');
@@ -293,9 +362,20 @@ async function creerCompteClient(){
     await sb.from('clients').update({pin}).eq('id',existing.id);
     state.client={...existing,pin};
     state.loggedIn=true;
+    // Appliquer le parrainage si code fourni
+    let parrainageMsg='';
+    if(codeParrain){
+      const result=await appliquerParrainage(state.client, codeParrain);
+      if(result.ok){
+        parrainageMsg=' (+'+result.pts+' pts grâce à '+result.parrain+')';
+      } else {
+        showToast('⚠️ '+result.msg+' — compte créé sans parrainage','#e8a87c');
+      }
+    }
     await refreshQrToken();
+    await ensureCodeParrainage();
     await Promise.all([loadProducts(),loadClientPoints(existing.id),loadTransactions(existing.id),loadRecompenses()]);
-    showToast('✅ Compte activé ! Bienvenue '+existing.nom+' !','#8fc98a');
+    showToast('✅ Compte activé ! Bienvenue '+existing.nom+' !'+parrainageMsg,'#8fc98a');
     render();
   } else {
     return showToast('Numéro non reconnu — demandez à votre caissier de vous inscrire','#e87070');
@@ -311,6 +391,7 @@ async function loginClient(){
     state.client=data;
     state.loggedIn=true;
     await refreshQrToken();
+    await ensureCodeParrainage();
     await Promise.all([loadProducts(),loadClientPoints(data.id),loadTransactions(data.id),loadRecompenses()]);
     render();
   } else {
@@ -479,7 +560,63 @@ function renderCardTab(c,level,nextLevel,isVip){
   '<button onclick="saveEmail()" style="background:#e8a87c;border:none;color:#0a0a0a;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer">✓</button></div>')+
 '</div>';
 
+  // Bloc parrainage
+  if(c.code_parrainage){
+    html+='<div style="background:linear-gradient(135deg,rgba(200,149,108,.12),rgba(200,149,108,.04));border:1px solid rgba(200,149,108,.35);border-radius:14px;padding:16px;margin-top:14px">'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+
+        '<span style="font-size:22px">🎁</span>'+
+        '<div>'+
+          '<div style="font-size:14px;color:#e8a87c;font-weight:700">Invitez vos amis</div>'+
+          '<div style="font-size:11px;color:#888;margin-top:2px">Vous gagnez tous les deux des points bonus</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="background:#1e1e2e;border:1.5px dashed rgba(200,149,108,.5);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
+        '<div>'+
+          '<div style="font-size:9px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:2px">Votre code</div>'+
+          '<div style="font-family:monospace;font-size:22px;font-weight:800;color:#e8a87c;letter-spacing:3px">'+c.code_parrainage+'</div>'+
+        '</div>'+
+        '<button onclick="copierCodeParrainage()" style="background:#3a3a52;border:1px solid rgba(200,149,108,.4);color:#e8a87c;border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-weight:600">📋 Copier</button>'+
+      '</div>'+
+      '<button onclick="partagerParrainage()" style="width:100%;background:#c8956c;border:none;color:#fff;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">'+
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>'+
+        'Inviter un ami'+
+      '</button>'+
+    '</div>';
+  }
+
   return html;
+}
+
+// Partage le code de parrainage via l'API navigator.share (sheet natif iOS/Android)
+async function partagerParrainage(){
+  if(!state.client||!state.client.code_parrainage) return;
+  const url=window.location.origin+'/client.html?ref='+state.client.code_parrainage;
+  const pts=await getPointsParrainage();
+  const text='Rejoins-moi sur la carte fidélité de '+SHOP_NAME+' avec mon code '+state.client.code_parrainage+' et on gagne chacun '+pts+' pts ! 🎁';
+  if(navigator.share){
+    try{
+      await navigator.share({title:SHOP_NAME, text:text, url:url});
+    }catch(e){
+      // L'utilisateur a annulé, pas d'erreur à afficher
+    }
+  } else {
+    // Fallback : copier le lien dans le presse-papier
+    try{
+      await navigator.clipboard.writeText(text+' '+url);
+      showToast('✅ Lien copié — partagez-le où vous voulez','#8fc98a');
+    }catch(e){
+      showToast('Impossible de partager — copiez votre code manuellement','#e87070');
+    }
+  }
+}
+
+function copierCodeParrainage(){
+  if(!state.client||!state.client.code_parrainage) return;
+  navigator.clipboard.writeText(state.client.code_parrainage).then(function(){
+    showToast('✅ Code copié !','#8fc98a');
+  }).catch(function(){
+    showToast('Impossible de copier','#e87070');
+  });
 }
 
 function renderJaugesTab(){

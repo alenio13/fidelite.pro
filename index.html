@@ -15,6 +15,7 @@ body{background:#1e1e2e;color:#f5f2ee;font-family:'Helvetica Neue',sans-serif;mi
 .badge-argent{background:rgba(176,190,197,.25);color:#c8d8e0;border-color:rgba(176,190,197,.4)}
 .badge-or{background:rgba(249,208,86,.25);color:#f9d056;border-color:rgba(249,208,86,.4)}
 .badge-platine{background:rgba(224,224,255,.25);color:#e0e0ff;border-color:rgba(224,224,255,.4)}
+.badge-nouveau{background:rgba(150,150,150,.15);color:#aaa;border:1px solid rgba(150,150,150,.3)}
 .badge-vip{background:rgba(255,215,0,.25);color:#ffd700;border:1px solid rgba(255,215,0,.5);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700}
 .view-switch{display:flex;gap:6px;margin-bottom:20px}
 .view-btn{flex:1;padding:10px 0;border-radius:14px;background:#2a2a3e;border:1px solid #3a3a50;color:#666;font-size:12px;cursor:pointer;transition:all .2s;text-align:center}
@@ -99,9 +100,44 @@ const LEVELS=[
   {name:"Platine", min:2000, max:Infinity, color:"#e0e0ff"},
 ];
 const LEVEL_ORDER=["Bronze","Argent","Or","Platine"];
+const NOUVEAU={name:"Nouveau",min:0,max:0,color:"#888"};
 
-function getLevel(p){return LEVELS.find(l=>p>=l.min&&p<=l.max)||LEVELS[0]}
-function getBadgeClass(pts){const n=getLevel(pts).name;return n==='Argent'?'badge badge-argent':n==='Or'?'badge badge-or':n==='Platine'?'badge badge-platine':'badge'}
+// Construit la liste des niveaux à partir des seuils de récompenses (table recompenses_niveaux).
+// Si aucune récompense chargée → fallback sur les LEVELS hardcodés.
+function buildLevels(){
+  if(!state.recompensesNiveaux||!state.recompensesNiveaux.length) return LEVELS.slice();
+  const recs=state.recompensesNiveaux
+    .filter(r=>LEVEL_ORDER.includes(r.niveau)&&r.points_requis!=null)
+    .slice()
+    .sort((a,b)=>a.points_requis-b.points_requis);
+  if(!recs.length) return LEVELS.slice();
+  const dyn=recs.map(r=>{
+    const base=LEVELS.find(l=>l.name===r.niveau);
+    return {name:r.niveau,min:r.points_requis,color:base?base.color:"#c8956c"};
+  });
+  for(let i=0;i<dyn.length;i++){
+    dyn[i].max=(i+1<dyn.length)?dyn[i+1].min-1:Infinity;
+  }
+  return dyn;
+}
+
+function getLevel(p){
+  const dyn=buildLevels();
+  if(!dyn.length||p<dyn[0].min) return {...NOUVEAU,max:(dyn[0]?dyn[0].min-1:0)};
+  return dyn.find(l=>p>=l.min&&p<=l.max)||dyn[dyn.length-1];
+}
+
+function getNextLevel(p){
+  const dyn=buildLevels();
+  if(!dyn.length) return null;
+  if(p<dyn[0].min) return dyn[0];
+  for(let i=0;i<dyn.length;i++){
+    if(p>=dyn[i].min&&p<=dyn[i].max) return dyn[i+1]||null;
+  }
+  return null;
+}
+
+function getBadgeClass(pts){const n=getLevel(pts).name;if(n==='Nouveau')return 'badge badge-nouveau';return n==='Argent'?'badge badge-argent':n==='Or'?'badge badge-or':n==='Platine'?'badge badge-platine':'badge'}
 function today(){return new Date().toISOString().split('T')[0]}
 function oneYearAgo(){const d=new Date();d.setFullYear(d.getFullYear()-1);return d.toISOString().split('T')[0]}
 function thisMonth(){return new Date().toISOString().slice(0,7)}
@@ -774,12 +810,21 @@ function renderClientCard(c,level,nextLevel){
 
   // Récompenses niveaux
   if(state.recompensesNiveaux&&state.recompensesNiveaux.length>0){
+    // Niveau actuel calculé dynamiquement (par les seuils de récompenses), pas depuis c.niveau_actuel
+    const levelActuelDyn=getLevel(c.points).name;
+    const idxActuelDyn=LEVEL_ORDER.indexOf(levelActuelDyn); // -1 si "Nouveau"
     html+='<div style="background:#111;border:1px solid #1a1a1a;border-radius:16px;padding:16px 20px;margin-top:14px">'+
       '<div class="section-title">Progression & Récompenses</div>';
+    if(levelActuelDyn==='Nouveau'){
+      const firstReward=state.recompensesNiveaux.slice().sort((a,b)=>a.points_requis-b.points_requis)[0];
+      html+='<div style="background:rgba(150,150,150,.08);border:1px solid rgba(150,150,150,.2);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#888">'+
+        '✦ Nouveau client — '+(firstReward?'encore '+(firstReward.points_requis-c.points)+' pts pour débloquer '+firstReward.niveau:'pas encore de récompense configurée')+
+        '</div>';
+    }
     LEVEL_ORDER.forEach((niv,i)=>{
       const r=state.recompensesNiveaux.find(x=>x.niveau===niv);
-      const current=c.niveau_actuel===niv;
-      const done=LEVEL_ORDER.indexOf(c.niveau_actuel)>i;
+      const current=levelActuelDyn===niv;
+      const done=idxActuelDyn>i;
       const lv=LEVELS.find(l=>l.name===niv);
       html+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;opacity:'+(done?0.4:1)+'">'+
         '<div style="width:10px;height:10px;border-radius:50%;background:'+(done?'#333':current?lv.color:'#222')+';box-shadow:'+(current?'0 0 8px '+lv.color:'none')+';flex-shrink:0"></div>'+

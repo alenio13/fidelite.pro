@@ -311,6 +311,7 @@ function renderLogin(){
     // Inscription
     '<div id="form-inscription" style="display:none">'+
     '<div style="font-size:14px;color:#f5f2ee;font-weight:700;margin-bottom:14px;text-align:center">Créer mon compte</div>'+
+    '<input class="input" type="text" id="nom-inscription" placeholder="Votre prénom et nom">'+
     '<input class="input" type="tel" id="tel-inscription" placeholder="Votre numéro de téléphone">'+
     '<input class="input" type="password" id="pin-nouveau" placeholder="Choisissez un code PIN à 4 chiffres" maxlength="4">'+
     '<input class="input" type="password" id="pin-confirm" placeholder="Confirmez votre code PIN" maxlength="4">'+
@@ -345,41 +346,64 @@ function showFormLogin(){
 }
 
 async function creerCompteClient(){
+  const nom=document.getElementById('nom-inscription')?.value?.trim();
   const tel=document.getElementById('tel-inscription')?.value?.trim();
   const pin=document.getElementById('pin-nouveau')?.value?.trim();
   const confirm=document.getElementById('pin-confirm')?.value?.trim();
   const codeParrain=(document.getElementById('code-parrainage')?.value||'').toUpperCase().trim();
+  if(!nom||nom.length<2)return showToast('Entrez votre nom','#e87070');
   if(!tel)return showToast('Entrez votre numéro de téléphone','#e87070');
-  if(!pin||pin.length!==4)return showToast('Le PIN doit faire 4 chiffres','#e87070');
+  if(!/^\d{10}$/.test(tel.replace(/\s/g,'')))return showToast('Numéro invalide (10 chiffres)','#e87070');
+  if(!pin||pin.length!==4||!/^\d{4}$/.test(pin))return showToast('Le PIN doit être 4 chiffres','#e87070');
   if(pin!==confirm)return showToast('Les PIN ne correspondent pas','#e87070');
-  // Vérifier si le numéro existe (compte créé par caissière sans PIN)
+
+  // Vérifier si le numéro existe déjà
   const {data:existing}=await sb.from('clients').select('*').eq('telephone',tel).single();
   if(existing&&existing.pin){
     return showToast('Ce numéro a déjà un compte — connectez-vous','#e87070');
   }
+
+  let client;
   if(existing&&!existing.pin){
-    // Compte existe sans PIN — le client définit son PIN
-    await sb.from('clients').update({pin}).eq('id',existing.id);
-    state.client={...existing,pin};
-    state.loggedIn=true;
-    // Appliquer le parrainage si code fourni
-    let parrainageMsg='';
-    if(codeParrain){
-      const result=await appliquerParrainage(state.client, codeParrain);
-      if(result.ok){
-        parrainageMsg=' (+'+result.pts+' pts grâce à '+result.parrain+')';
-      } else {
-        showToast('⚠️ '+result.msg+' — compte créé sans parrainage','#e8a87c');
-      }
-    }
-    await refreshQrToken();
-    await ensureCodeParrainage();
-    await Promise.all([loadProducts(),loadClientPoints(existing.id),loadTransactions(existing.id),loadRecompenses()]);
-    showToast('✅ Compte activé ! Bienvenue '+existing.nom+' !'+parrainageMsg,'#8fc98a');
-    render();
+    // Cas 1 : compte pré-créé par la caissière, le client définit son PIN
+    const updates={pin};
+    if(!existing.nom||existing.nom.trim()==='') updates.nom=nom;
+    const {data:updated, error:updErr}=await sb.from('clients').update(updates).eq('id',existing.id).select().single();
+    if(updErr||!updated){return showToast('Erreur activation : '+(updErr?.message||'inconnu'),'#e87070');}
+    client=updated;
   } else {
-    return showToast('Numéro non reconnu — demandez à votre caissier de vous inscrire','#e87070');
+    // Cas 2 : inscription totalement autonome (aucun compte préalable)
+    const {data:created, error:insErr}=await sb.from('clients').insert({
+      nom:nom,
+      telephone:tel,
+      pin:pin,
+      points:0,
+      vip:false,
+      vip_bonus:0
+    }).select().single();
+    if(insErr||!created){return showToast('Erreur création : '+(insErr?.message||'inconnu'),'#e87070');}
+    client=created;
   }
+
+  state.client=client;
+  state.loggedIn=true;
+
+  // Appliquer le parrainage si code fourni
+  let parrainageMsg='';
+  if(codeParrain){
+    const result=await appliquerParrainage(state.client, codeParrain);
+    if(result.ok){
+      parrainageMsg=' (+'+result.pts+' pts grâce à '+result.parrain+')';
+    } else {
+      showToast('⚠️ '+result.msg+' — compte créé sans parrainage','#e8a87c');
+    }
+  }
+
+  await refreshQrToken();
+  await ensureCodeParrainage();
+  await Promise.all([loadProducts(),loadClientPoints(client.id),loadTransactions(client.id),loadRecompenses()]);
+  showToast('✅ Bienvenue '+state.client.nom+' !'+parrainageMsg,'#8fc98a');
+  render();
 }
 
 async function loginClient(){
@@ -563,13 +587,28 @@ function renderCardTab(c,level,nextLevel,isVip){
   // Bloc parrainage
   if(c.code_parrainage){
     html+='<div style="background:linear-gradient(135deg,rgba(200,149,108,.12),rgba(200,149,108,.04));border:1px solid rgba(200,149,108,.35);border-radius:14px;padding:16px;margin-top:14px">'+
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'+
         '<span style="font-size:22px">🎁</span>'+
         '<div>'+
-          '<div style="font-size:14px;color:#e8a87c;font-weight:700">Invitez vos amis</div>'+
-          '<div style="font-size:11px;color:#888;margin-top:2px">Vous gagnez tous les deux des points bonus</div>'+
+          '<div style="font-size:14px;color:#e8a87c;font-weight:700">Parrainage</div>'+
+          '<div style="font-size:11px;color:#888;margin-top:2px">Invitez vos amis, vous gagnez tous les deux des points</div>'+
         '</div>'+
       '</div>'+
+      // Sous-bloc "Avez-vous été parrainé ?" — affiché si pas encore de parrain
+      (!c.parrain_id?
+        '<div style="background:rgba(200,149,108,.08);border:1px dashed rgba(200,149,108,.3);border-radius:10px;padding:12px;margin-bottom:12px">'+
+          '<div style="font-size:11px;color:#aaa;margin-bottom:8px">Avez-vous un code de parrainage ?</div>'+
+          '<div style="display:flex;gap:6px">'+
+            '<input type="text" id="appliquer-code" placeholder="EX: XYZ4K7" maxlength="6" style="flex:1;background:#1e1e2e;border:1px solid #3a3a50;border-radius:8px;padding:9px 12px;color:#e8a87c;font-size:14px;font-family:monospace;text-transform:uppercase;letter-spacing:2px;outline:none">'+
+            '<button onclick="appliquerCodeRetro()" style="background:#c8956c;border:none;color:#fff;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer">Valider</button>'+
+          '</div>'+
+        '</div>'
+      :
+        '<div style="background:rgba(126,200,126,.08);border:1px solid rgba(126,200,126,.25);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#9be0a8">'+
+          '✓ Vous avez été parrainé'+
+        '</div>'
+      )+
+      // Mon code à partager
       '<div style="background:#1e1e2e;border:1.5px dashed rgba(200,149,108,.5);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
         '<div>'+
           '<div style="font-size:9px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:2px">Votre code</div>'+
@@ -617,6 +656,24 @@ function copierCodeParrainage(){
   }).catch(function(){
     showToast('Impossible de copier','#e87070');
   });
+}
+
+// Appliquer un code de parrainage rétroactivement (clients déjà inscrits sans parrain)
+async function appliquerCodeRetro(){
+  const input=document.getElementById('appliquer-code');
+  if(!input) return;
+  const code=(input.value||'').toUpperCase().trim();
+  if(!code) return showToast('Entrez un code','#e87070');
+  if(state.client.parrain_id) return showToast('Vous avez déjà été parrainé','#e87070');
+  const result=await appliquerParrainage(state.client, code);
+  if(result.ok){
+    // Recharger les transactions pour voir le bonus
+    await loadTransactions(state.client.id);
+    showToast('✅ Parrainage appliqué ! +'+result.pts+' pts grâce à '+result.parrain,'#8fc98a');
+    render();
+  } else {
+    showToast('⚠️ '+result.msg,'#e87070');
+  }
 }
 
 function renderJaugesTab(){

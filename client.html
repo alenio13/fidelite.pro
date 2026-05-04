@@ -48,7 +48,7 @@ body{background:#1e1e2e;color:#f5f2ee;font-family:'Helvetica Neue',sans-serif;mi
 .card-flip-hint-c{text-align:center;font-size:10px;color:#666;letter-spacing:2px;text-transform:uppercase;margin:4px 0 14px;animation:hintBlinkC 2.4s infinite}
 @keyframes hintBlinkC{0%,100%{opacity:.4}50%{opacity:1}}
 .card-magstripe{position:absolute;top:18px;left:0;right:0;height:30px;background:#0a0a14}
-.qr-on-card{width:118px;height:118px;background:#fff;border-radius:8px;padding:6px;display:flex;align-items:center;justify-content:center;margin-top:24px;overflow:hidden}
+.qr-on-card{width:130px;height:130px;background:#fff;border-radius:8px;padding:6px;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .qr-on-card canvas{width:100% !important;height:100% !important;image-rendering:pixelated;image-rendering:crisp-edges;display:block}
 .card-chip{width:32px;height:24px;background:linear-gradient(135deg,#d4af37,#b8860b);border-radius:4px;position:relative}
 .card-chip::before{content:'';position:absolute;inset:3px;border-radius:2px;background:repeating-linear-gradient(0deg,rgba(0,0,0,.2),rgba(0,0,0,.2) 1px,transparent 1px,transparent 4px),repeating-linear-gradient(90deg,rgba(0,0,0,.2),rgba(0,0,0,.2) 1px,transparent 1px,transparent 4px)}
@@ -344,7 +344,6 @@ function renderCardTab(c,level,nextLevel,isVip){
       '</div>'+
       // VERSO
       '<div class="card-face-c card-back-c" style="background:'+bgBack+';box-shadow:0 0 0 1px '+accentRgba+',0 20px 50px rgba(0,0,0,.6)">'+
-        '<div class="card-magstripe"></div>'+
         '<div id="qr-div-'+c.id+'" class="qr-on-card"></div>'+
         '<div style="font-size:9px;color:'+accentColor+';letter-spacing:3px;text-transform:uppercase;text-align:center;font-weight:600">✦ Scan en caisse ✦</div>'+
         '<div style="font-size:10px;color:#666;text-align:center;letter-spacing:.5px">Présentez ce QR au caissier</div>'+

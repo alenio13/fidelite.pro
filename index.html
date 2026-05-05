@@ -934,6 +934,8 @@ state.pointsEmail=pe?parseInt(pe.valeur)||0:0;
 state.vipBonusDefaut=pv?parseInt(pv.valeur)||10:10;
   const {data:pp}=await sb.from('config').select('valeur').eq('cle','points_parrainage').single();
 state.pointsParrainage=pp?parseInt(pp.valeur)||50:50;
+  const {data:lp}=await sb.from('config').select('valeur').eq('cle','points_parrainage_limite_mensuelle').single();
+state.limiteParrainage=lp?parseInt(lp.valeur)||5:5;
   await archivageAuto(moisActuel);
   await loadProducts();
 }
@@ -1038,6 +1040,37 @@ state.demandesVip.map(d=>
 '<button onclick="refuserVip(\''+d.id+'\')" style="background:rgba(232,112,112,.1);border:1px solid rgba(232,112,112,.3);color:#e87070;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer">✕</button>'+
 '</div></div>').join('')+
 '</div>':'');
+// === TOP PARRAINS DU MOIS ===
+{
+  const ms30=30*24*3600*1000;
+  const now=Date.now();
+  const txParrains=(state.allTransactions||[]).filter(t=>t.label&&t.label.indexOf('🎁 Parrainage de')===0&&t.created_at&&(now-new Date(t.created_at).getTime())<ms30);
+  const counts={};
+  txParrains.forEach(t=>{counts[t.client_id]=(counts[t.client_id]||0)+1;});
+  const topParrains=Object.entries(counts).map(([id,n])=>{
+    const c=(state.allClients||[]).find(x=>x.id===id);
+    return {id,nom:c?c.nom:'Inconnu',count:n};
+  }).sort((a,b)=>b.count-a.count).slice(0,5);
+  const limite=state.limiteParrainage||5;
+  if(topParrains.length>0){
+    html+='<div class="section-title" style="margin-top:20px">🎁 Top parrains (30 derniers jours)</div>'+
+      '<div style="background:#111;border:1px solid rgba(200,149,108,.2);border-radius:14px;padding:12px 16px;margin-bottom:16px">';
+    topParrains.forEach((p,i)=>{
+      const pct=Math.min(100,(p.count/limite)*100);
+      const flag=p.count>=limite;
+      const color=flag?'#e87070':p.count>=limite*0.7?'#f9d056':'#7ec87e';
+      html+='<div style="padding:10px 0;'+(i<topParrains.length-1?'border-bottom:1px solid #1a1a1a;':'')+'">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
+          '<div style="font-size:13px;color:#ddd;font-weight:500">'+(i+1)+'. '+p.nom+(flag?' <span style="color:#e87070">⚠️ Limite atteinte</span>':'')+'</div>'+
+          '<div style="font-size:13px;color:'+color+';font-weight:700;font-family:monospace">'+p.count+' / '+limite+'</div>'+
+        '</div>'+
+        '<div style="height:4px;background:#0d0d0d;border-radius:2px;overflow:hidden"><div style="height:100%;background:'+color+';width:'+pct+'%;border-radius:2px"></div></div>'+
+      '</div>';
+    });
+    html+='<div style="font-size:11px;color:#666;margin-top:10px;line-height:1.5">💡 Au-delà de la limite, le parrainage est bloqué automatiquement pour 30 jours.</div>'+
+    '</div>';
+  }
+}
 html+='<div class="section-title" style="margin-top:20px">QR code accès client</div>'+
 '<div style="background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:20px;margin-bottom:16px;display:flex;flex-direction:column;align-items:center;gap:12px">'+
 '<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data='+encodeURIComponent(window.location.origin+'/client')+'" style="border-radius:12px;width:180px;height:180px" alt="QR Code">'+
@@ -1127,14 +1160,18 @@ Object.entries(statsCaissier).forEach(([nom,s])=>{
 '</select>'+
 '<button onclick="sauvegarderVipBonusDefaut()" style="width:100%;background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.3);color:#ffd700;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">💾 Enregistrer</button></div>';
 html+='<div style="background:#2a2a3e;border:1px solid rgba(200,149,108,.3);border-radius:16px;padding:16px;margin-top:16px">'+
-'<div class="section-title">🎁 Récompense parrainage</div>'+
+'<div class="section-title">🎁 Parrainage</div>'+
 '<div style="font-size:12px;color:#888;margin-bottom:12px">Points offerts au parrain ET au filleul lorsqu\'un client en parraine un autre.</div>'+
-'<div style="background:rgba(200,149,108,.12);border:1px solid rgba(200,149,108,.3);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#e8a87c;font-weight:700">✓ Valeur actuelle : +'+(state.pointsParrainage||50)+' pts pour chacun</div>'+
-'<div style="margin-bottom:10px"><div style="font-size:11px;color:#888;margin-bottom:4px">NOUVEAU MONTANT</div>'+
+'<div style="background:rgba(200,149,108,.12);border:1px solid rgba(200,149,108,.3);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#e8a87c;font-weight:700">✓ Récompense actuelle : +'+(state.pointsParrainage||50)+' pts pour chacun · Limite : '+(state.limiteParrainage||5)+' parrainages/30j</div>'+
+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
+'<div><div style="font-size:11px;color:#888;margin-bottom:4px">RÉCOMPENSE (pts)</div>'+
 '<input class="input" type="number" id="points-parrainage-input" placeholder="Ex: 50" min="0" max="500" style="margin-bottom:0"></div>'+
+'<div><div style="font-size:11px;color:#888;margin-bottom:4px">LIMITE / 30 JOURS</div>'+
+'<input class="input" type="number" id="limite-parrainage-input" placeholder="Ex: 5" min="1" max="100" style="margin-bottom:0"></div>'+
+'</div>'+
 '<button onclick="sauvegarderPointsParrainage()" style="width:100%;background:rgba(200,149,108,.15);border:1px solid rgba(200,149,108,.3);color:#e8a87c;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">💾 Enregistrer</button>'+
 '<div style="background:#1e1e2e;border-radius:8px;padding:8px 12px;margin-top:10px;font-size:12px;color:#888;line-height:1.5">'+
-  '💡 '+(state.allClients||[]).filter(c=>c.parrain_id).length+' client(s) parrainé(s) à ce jour'+
+  '💡 '+(state.allClients||[]).filter(c=>c.parrain_id).length+' client(s) parrainé(s) à ce jour. La limite anti-abus empêche un client de parrainer plus que ce nombre sur 30 jours glissants.'+
 '</div></div>';
 html+='<div style="background:#2a2a3e;border:1px solid rgba(200,149,108,.3);border-radius:16px;padding:16px;margin-top:16px">'+
 '<div class="section-title">📧 Envoyer un email aux clients</div>'+
@@ -1647,11 +1684,25 @@ async function envoyerOffreEmail(){
   render();
 }
 async function sauvegarderPointsParrainage(){
-  const val=parseInt(document.getElementById('points-parrainage-input')?.value);
-  if(isNaN(val)||val<0||val>500)return showToast('Valeur invalide (0–500)','#e87070');
-  await sb.from('config').upsert({cle:'points_parrainage',valeur:String(val)},{onConflict:'cle'});
-  state.pointsParrainage=val;
-  showToast('✅ Récompense parrainage : +'+val+' pts pour chacun','#e8a87c');
+  const valPts=parseInt(document.getElementById('points-parrainage-input')?.value);
+  const valLim=parseInt(document.getElementById('limite-parrainage-input')?.value);
+  const updates=[];
+  let msg=[];
+  if(!isNaN(valPts)){
+    if(valPts<0||valPts>500)return showToast('Récompense invalide (0–500)','#e87070');
+    updates.push(sb.from('config').upsert({cle:'points_parrainage',valeur:String(valPts)},{onConflict:'cle'}));
+    state.pointsParrainage=valPts;
+    msg.push('Récompense : +'+valPts+' pts');
+  }
+  if(!isNaN(valLim)){
+    if(valLim<1||valLim>100)return showToast('Limite invalide (1–100)','#e87070');
+    updates.push(sb.from('config').upsert({cle:'points_parrainage_limite_mensuelle',valeur:String(valLim)},{onConflict:'cle'}));
+    state.limiteParrainage=valLim;
+    msg.push('Limite : '+valLim+'/30j');
+  }
+  if(!updates.length)return showToast('Aucun champ rempli','#e87070');
+  await Promise.all(updates);
+  showToast('✅ '+msg.join(' · '),'#e8a87c');
   render();
 }
 function showToast(msg,color){

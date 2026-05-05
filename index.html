@@ -347,12 +347,10 @@ function renderLogin(){
     '<div style="font-size:12px;color:#c8956c;font-weight:700;margin-bottom:10px">🏪 Caissier</div>'+
     '<input class="input" type="text" id="caissier-code" placeholder="Votre code caissier">'+
     '<button onclick="loginCaissier()" class="btn-primary">Connexion</button></div>'+
-    '<div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:14px;padding:14px">'+
-    '<div style="font-size:12px;color:#888;font-weight:700;margin-bottom:10px">👤 Client</div>'+
-    '<input class="input" type="tel" id="tel-input" placeholder="Numéro de téléphone">'+
-    '<input class="input" type="password" id="pin-input" placeholder="Code PIN à 4 chiffres" maxlength="4">'+
-    '<button onclick="loginClient()" style="width:100%;background:#1a1a1a;border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">Voir ma carte</button>'+
-    '</div></div></div>';
+    '<div style="text-align:center;margin-top:8px;font-size:12px;color:#666">'+
+    '👤 Vous êtes client ? <a href="/client.html" style="color:#c8956c;text-decoration:none;font-weight:600">Accéder à ma carte →</a>'+
+    '</div>'+
+    '</div></div>';
 }
 
 async function loginPatron(){
@@ -934,6 +932,8 @@ async function loadPatronData(){
 state.pointsEmail=pe?parseInt(pe.valeur)||0:0;
   const {data:pv}=await sb.from('config').select('valeur').eq('cle','vip_bonus_defaut').single();
 state.vipBonusDefaut=pv?parseInt(pv.valeur)||10:10;
+  const {data:pp}=await sb.from('config').select('valeur').eq('cle','points_parrainage').single();
+state.pointsParrainage=pp?parseInt(pp.valeur)||50:50;
   await archivageAuto(moisActuel);
   await loadProducts();
 }
@@ -1118,7 +1118,17 @@ Object.entries(statsCaissier).forEach(([nom,s])=>{
 '<select id="vip-bonus-defaut" style="width:100%;background:#1e1e2e;border:1px solid rgba(255,215,0,.3);border-radius:10px;padding:12px;color:#ffd700;font-size:14px;margin-bottom:10px">'+
 [5,10,15,20,25,30,50].map(v=>'<option value="'+v+'" '+(state.vipBonusDefaut===v?'selected':'')+'>+'+v+'%</option>').join('')+
 '</select>'+
-'<button onclick="sauvegarderVipBonusDefaut()" style="width:100%;background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.3);color:#ffd700;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">💾 Enregistrer</button></div>';   
+'<button onclick="sauvegarderVipBonusDefaut()" style="width:100%;background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.3);color:#ffd700;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">💾 Enregistrer</button></div>';
+html+='<div style="background:#2a2a3e;border:1px solid rgba(200,149,108,.3);border-radius:16px;padding:16px;margin-top:16px">'+
+'<div class="section-title">🎁 Récompense parrainage</div>'+
+'<div style="font-size:12px;color:#888;margin-bottom:12px">Points offerts au parrain ET au filleul lorsqu\'un client en parraine un autre.</div>'+
+'<div style="background:rgba(200,149,108,.12);border:1px solid rgba(200,149,108,.3);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#e8a87c;font-weight:700">✓ Valeur actuelle : +'+(state.pointsParrainage||50)+' pts pour chacun</div>'+
+'<div style="margin-bottom:10px"><div style="font-size:11px;color:#888;margin-bottom:4px">NOUVEAU MONTANT</div>'+
+'<input class="input" type="number" id="points-parrainage-input" placeholder="Ex: 50" min="0" max="500" style="margin-bottom:0"></div>'+
+'<button onclick="sauvegarderPointsParrainage()" style="width:100%;background:rgba(200,149,108,.15);border:1px solid rgba(200,149,108,.3);color:#e8a87c;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">💾 Enregistrer</button>'+
+'<div style="background:#1e1e2e;border-radius:8px;padding:8px 12px;margin-top:10px;font-size:12px;color:#888;line-height:1.5">'+
+  '💡 '+(state.allClients||[]).filter(c=>c.parrain_id).length+' client(s) parrainé(s) à ce jour'+
+'</div></div>';
 html+='<div style="background:#2a2a3e;border:1px solid rgba(200,149,108,.3);border-radius:16px;padding:16px;margin-top:16px">'+
 '<div class="section-title">📧 Envoyer un email aux clients</div>'+
 '<div style="font-size:12px;color:#888;margin-bottom:12px">'+(state.allClients||[]).filter(c=>c.email).length+' client(s) avec email</div>'+
@@ -1609,6 +1619,14 @@ async function envoyerOffreEmail(){
   await sb.from('config').upsert({cle:'vip_bonus_defaut',valeur:String(val)},{onConflict:'cle'});
   state.vipBonusDefaut=val;
   showToast('✅ Bonus VIP par défaut : +'+val+'%','#ffd700');
+  render();
+}
+async function sauvegarderPointsParrainage(){
+  const val=parseInt(document.getElementById('points-parrainage-input')?.value);
+  if(isNaN(val)||val<0||val>500)return showToast('Valeur invalide (0–500)','#e87070');
+  await sb.from('config').upsert({cle:'points_parrainage',valeur:String(val)},{onConflict:'cle'});
+  state.pointsParrainage=val;
+  showToast('✅ Récompense parrainage : +'+val+' pts pour chacun','#e8a87c');
   render();
 }
 function showToast(msg,color){

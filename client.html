@@ -261,6 +261,23 @@ async function getPointsParrainage(){
   return data?parseInt(data.valeur,10)||50:50;
 }
 
+// Récupère la limite mensuelle de parrainages par parrain (default 5)
+async function getLimiteParrainage(){
+  const {data}=await sb.from('config').select('valeur').eq('cle','points_parrainage_limite_mensuelle').single();
+  return data?parseInt(data.valeur,10)||5:5;
+}
+
+// Compte les parrainages déjà effectués par ce parrain ces 30 derniers jours
+async function countParrainagesRecents(parrainId){
+  const since=new Date(Date.now()-30*24*3600*1000).toISOString();
+  const {count}=await sb.from('transactions')
+    .select('*',{count:'exact',head:true})
+    .eq('client_id',parrainId)
+    .ilike('label','🎁 Parrainage de%')
+    .gte('created_at',since);
+  return count||0;
+}
+
 // Applique le bonus de parrainage : ajoute X pts au parrain ET au filleul + crée 2 transactions
 async function appliquerParrainage(filleul, codeParrain){
   const codeNorm=(codeParrain||'').toUpperCase().trim();
@@ -270,8 +287,16 @@ async function appliquerParrainage(filleul, codeParrain){
   if(!parrain) return {ok:false, msg:'Code de parrainage inconnu'};
   if(parrain.id===filleul.id) return {ok:false, msg:'Vous ne pouvez pas vous parrainer vous-même'};
   if(filleul.parrain_id) return {ok:false, msg:'Vous avez déjà été parrainé'};
+  // Anti-abus : limite mensuelle de parrainages par parrain
+  const [pts,limite,deja]=await Promise.all([
+    getPointsParrainage(),
+    getLimiteParrainage(),
+    countParrainagesRecents(parrain.id),
+  ]);
+  if(deja>=limite){
+    return {ok:false, msg:'Ce parrain a atteint sa limite mensuelle ('+limite+' parrainages/30j)'};
+  }
   // Appliquer
-  const pts=await getPointsParrainage();
   const newPtsParrain=(parrain.points||0)+pts;
   const newPtsFilleul=(filleul.points||0)+pts;
   await Promise.all([

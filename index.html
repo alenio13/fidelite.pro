@@ -305,13 +305,11 @@ function render(){
     '<div class="view-switch">'+
     (state.role==='patron'?'<button class="view-btn active-patron"><div>👑 Patron</div><div>Tableau de bord</div></button>':'')+
     (state.role==='caissier'?'<button class="view-btn active"><div>🏪 Caisse</div><div>'+(state.caissierActif?state.caissierActif.nom:'Caissier')+'</div></button>':'')+
-    (state.role==='client'?'<button class="view-btn active active-client"><div>👤 Client</div><div>Ma carte</div></button>':'')+
     '<button class="view-btn" onclick="logout()" style="color:#444;max-width:55px"><div>⏏️</div><div>Quitter</div></button></div>'+
     (state.client&&state.view!=='patron'?renderClientStrip():'')+
-    (state.role==='patron'?renderPatron():state.view==='cashier'?renderCashier():renderClient())+
+    (state.role==='patron'?renderPatron():state.role==='caissier'?renderCashier():'')+
     '</div>';
   root.innerHTML=html;
-  if(state.view==='client'&&state.clientTab==='card'&&state.client)generateQR(state.client.id);
 }
 
 function renderClientStrip(){
@@ -370,14 +368,6 @@ async function loginCaissier(){
     state.role='caissier';state.caissierActif=data;state.view='cashier';
     await loadProducts();await loadBonusAndRecompenses();render();
   } else showToast('Code invalide ou désactivé','#e87070');
-}
-async function loginClient(){
-  const tel=document.getElementById('tel-input').value.trim();
-  const pin=document.getElementById('pin-input').value.trim();
-  if(!tel||!pin)return showToast('Entrez numéro et PIN','#e87070');
-  const {data}=await sb.from('clients').select('*').eq('telephone',tel).eq('pin',pin).single();
-  if(data){state.role='client';state.view='client';await loadClient(data);await loadProducts();await loadBonusAndRecompenses();render();}
-  else showToast('Numéro ou PIN incorrect','#e87070');
 }
 function logout(){
   Object.assign(state,{view:'login',role:null,caissierActif:null,client:null,transactions:[],clientPoints:{},cart:{},colisToday:false,step:'catalog',selectedClient:null,clientTab:'card',products:[],bonusPoints:[],recompensesNiveaux:[],recompenseVip:null});

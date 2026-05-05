@@ -961,13 +961,20 @@ async function archivageAuto(moisActuel){
 async function selectPatronClient(clientId,clientJson){
   const c=JSON.parse(decodeURIComponent(clientJson));
   state.selectedClient=c;
-  const [{data:txs},{data:pts}]=await Promise.all([
+  const promises=[
     sb.from('transactions').select('*').eq('client_id',clientId).order('created_at',{ascending:false}).limit(30),
     sb.from('points_produits').select('*').eq('client_id',clientId),
-  ]);
-  state.selectedClientTx=txs||[];
+    sb.from('clients').select('id,nom,created_at').eq('parrain_id',clientId).order('created_at',{ascending:false}),
+  ];
+  if(c.parrain_id){
+    promises.push(sb.from('clients').select('id,nom,code_parrainage').eq('id',c.parrain_id).single());
+  }
+  const results=await Promise.all(promises);
+  state.selectedClientTx=results[0].data||[];
   state.selectedClientPoints={};
-  (pts||[]).forEach(r=>{state.selectedClientPoints[r.produit_id]=r.points;});
+  (results[1].data||[]).forEach(r=>{state.selectedClientPoints[r.produit_id]=r.points;});
+  state.selectedClientFilleuls=results[2].data||[];
+  state.selectedClientParrain=c.parrain_id?(results[3]?.data||null):null;
   render();
 }
 
@@ -1276,6 +1283,24 @@ function renderPatronClientDetail(){
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
     '<div style="background:#0d0d0d;border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:'+level.color+'">'+c.points+'</div><div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-top:2px">Points</div></div>'+
     '<div style="background:#0d0d0d;border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:#7ec87e">'+visits+'</div><div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-top:2px">Visites</div></div></div>'+
+
+    // Bloc parrainage : "Parrainé par X" + nombre de filleuls
+    ((state.selectedClientParrain||(state.selectedClientFilleuls||[]).length>0||c.code_parrainage)?
+      '<div style="background:#0d0d0d;border:1px solid rgba(200,149,108,.25);border-radius:10px;padding:10px 12px;margin-bottom:12px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#888;margin-bottom:6px">'+
+          '<span>🎁 Parrainage</span>'+
+          (c.code_parrainage?'<span style="font-family:monospace;color:#c8956c;font-weight:700;letter-spacing:2px;font-size:11px">'+c.code_parrainage+'</span>':'')+
+        '</div>'+
+        (state.selectedClientParrain?
+          '<div style="font-size:12px;color:#ddd;margin-bottom:'+(state.selectedClientFilleuls.length>0?'6px':'0')+'">Parrainé par <strong style="color:#e8a87c">'+state.selectedClientParrain.nom+'</strong></div>'
+        :'')+
+        ((state.selectedClientFilleuls||[]).length>0?
+          '<div style="font-size:12px;color:#ddd">A parrainé <strong style="color:#7ec87e">'+state.selectedClientFilleuls.length+' personne'+(state.selectedClientFilleuls.length>1?'s':'')+'</strong> : '+
+            state.selectedClientFilleuls.map(function(f){return f.nom}).join(', ')+
+          '</div>'
+        :'')+
+      '</div>'
+    :'')+
 
     // Ajuster points
     '<button onclick="showAjustPoints()" style="width:100%;background:rgba(200,149,108,.1);border:1px solid rgba(200,149,108,.3);color:#c8956c;border-radius:10px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:10px">✏️ Ajuster les points</button>'+

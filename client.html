@@ -135,6 +135,7 @@ function oneYearAgo(){const d=new Date();d.setFullYear(d.getFullYear()-1);return
 let state={
   client:null, transactions:[], clientPoints:{}, products:[],
   recompensesNiveaux:[], recompenseVip:null,
+  filleuls:[], parrainInfo:null,
   tab:'card', toast:null, loggedIn:false,
 };
 
@@ -158,6 +159,27 @@ async function loadRecompenses(){
   ]);
   state.recompensesNiveaux=rn||[];
   state.recompenseVip=(rv&&rv[0])||null;
+}
+
+// Charge la liste des filleuls (clients que j'ai parrainés) + nom du parrain s'il y en a un
+async function loadParrainage(){
+  if(!state.client) return;
+  const promises=[];
+  // Mes filleuls
+  promises.push(
+    sb.from('clients').select('id,nom,created_at').eq('parrain_id',state.client.id).order('created_at',{ascending:false})
+      .then(function(r){state.filleuls=r.data||[]})
+  );
+  // Mon parrain (s'il existe)
+  if(state.client.parrain_id){
+    promises.push(
+      sb.from('clients').select('id,nom').eq('id',state.client.parrain_id).single()
+        .then(function(r){state.parrainInfo=r.data||null})
+    );
+  } else {
+    state.parrainInfo=null;
+  }
+  await Promise.all(promises);
 }
 
 // === SÉCURITÉ QR ===
@@ -401,7 +423,7 @@ async function creerCompteClient(){
 
   await refreshQrToken();
   await ensureCodeParrainage();
-  await Promise.all([loadProducts(),loadClientPoints(client.id),loadTransactions(client.id),loadRecompenses()]);
+  await Promise.all([loadProducts(),loadClientPoints(client.id),loadTransactions(client.id),loadRecompenses(),loadParrainage()]);
   showToast('✅ Bienvenue '+state.client.nom+' !'+parrainageMsg,'#8fc98a');
   render();
 }
@@ -416,7 +438,7 @@ async function loginClient(){
     state.loggedIn=true;
     await refreshQrToken();
     await ensureCodeParrainage();
-    await Promise.all([loadProducts(),loadClientPoints(data.id),loadTransactions(data.id),loadRecompenses()]);
+    await Promise.all([loadProducts(),loadClientPoints(data.id),loadTransactions(data.id),loadRecompenses(),loadParrainage()]);
     render();
   } else {
     showToast('Numéro ou PIN incorrect','#e87070');
@@ -605,7 +627,7 @@ function renderCardTab(c,level,nextLevel,isVip){
         '</div>'
       :
         '<div style="background:rgba(126,200,126,.08);border:1px solid rgba(126,200,126,.25);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#9be0a8">'+
-          '✓ Vous avez été parrainé'+
+          '✓ Parrainé par '+(state.parrainInfo?state.parrainInfo.nom:'un client')+
         '</div>'
       )+
       // Mon code à partager
@@ -621,6 +643,30 @@ function renderCardTab(c,level,nextLevel,isVip){
         'Inviter un ami'+
       '</button>'+
     '</div>';
+
+    // Liste des filleuls
+    if(state.filleuls && state.filleuls.length > 0){
+      // Calcul du total points gagnés via parrainage (transactions de type bonus + label "Parrainage de")
+      var ptsGagnes = (state.transactions||[]).filter(function(t){
+        return t.label && t.label.indexOf('Parrainage de') !== -1;
+      }).reduce(function(sum,t){return sum + (t.points||0);}, 0);
+      html += '<div style="background:#2a2a3e;border:1px solid #3a3a50;border-radius:14px;padding:14px 16px;margin-top:14px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'+
+          '<div class="section-title" style="margin-bottom:0">Mes filleuls ('+state.filleuls.length+')</div>'+
+          '<span style="font-size:13px;color:#7ec87e;font-weight:700;font-family:monospace">+'+ptsGagnes+' pts gagnés</span>'+
+        '</div>';
+      state.filleuls.forEach(function(f){
+        var dateStr = f.created_at ? new Date(f.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : '';
+        html += '<div style="background:#1e1e2e;border:1px solid #3a3a50;border-radius:10px;padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">'+
+          '<div>'+
+            '<div style="font-size:13px;color:#f5f2ee;font-weight:500">'+f.nom+'</div>'+
+            '<div style="font-size:11px;color:#666;margin-top:2px">Inscrit le '+dateStr+'</div>'+
+          '</div>'+
+          '<span style="font-size:14px">🎁</span>'+
+        '</div>';
+      });
+      html += '</div>';
+    }
   }
 
   return html;
@@ -667,8 +713,8 @@ async function appliquerCodeRetro(){
   if(state.client.parrain_id) return showToast('Vous avez déjà été parrainé','#e87070');
   const result=await appliquerParrainage(state.client, code);
   if(result.ok){
-    // Recharger les transactions pour voir le bonus
-    await loadTransactions(state.client.id);
+    // Recharger les transactions et infos parrainage
+    await Promise.all([loadTransactions(state.client.id), loadParrainage()]);
     showToast('✅ Parrainage appliqué ! +'+result.pts+' pts grâce à '+result.parrain,'#8fc98a');
     render();
   } else {

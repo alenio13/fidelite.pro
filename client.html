@@ -270,12 +270,17 @@ async function getLimiteParrainage(){
 // Compte les parrainages déjà effectués par ce parrain ces 30 derniers jours
 async function countParrainagesRecents(parrainId){
   const since=new Date(Date.now()-30*24*3600*1000).toISOString();
-  const {count}=await sb.from('transactions')
-    .select('*',{count:'exact',head:true})
+  // On récupère tous les bonus du parrain ces 30j et on filtre en JS
+  // (évite les soucis d'encodage emoji avec ilike côté Supabase)
+  const {data}=await sb.from('transactions')
+    .select('label,created_at')
     .eq('client_id',parrainId)
-    .ilike('label','🎁 Parrainage de%')
+    .eq('type','bonus')
     .gte('created_at',since);
-  return count||0;
+  if(!data) return 0;
+  return data.filter(function(t){
+    return t.label && t.label.indexOf('Parrainage de')!==-1;
+  }).length;
 }
 
 // Applique le bonus de parrainage : ajoute X pts au parrain ET au filleul + crée 2 transactions

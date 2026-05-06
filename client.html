@@ -437,6 +437,7 @@ async function creerCompteClient(){
   await refreshQrToken();
   await ensureCodeParrainage();
   await Promise.all([loadProducts(),loadClientPoints(client.id),loadTransactions(client.id),loadRecompenses(),loadParrainage()]);
+  cacheClientState();
   showToast('✅ Bienvenue '+state.client.nom+' !'+parrainageMsg,'#8fc98a');
   render();
 }
@@ -452,6 +453,7 @@ async function loginClient(){
     await refreshQrToken();
     await ensureCodeParrainage();
     await Promise.all([loadProducts(),loadClientPoints(data.id),loadTransactions(data.id),loadRecompenses(),loadParrainage()]);
+    cacheClientState();
     render();
   } else {
     showToast('Numéro ou PIN incorrect','#e87070');
@@ -984,6 +986,79 @@ window.addEventListener('load',function(){
     }
   },500);
 });
+
+// === SERVICE WORKER (mode offline) ===
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(function(reg){console.log('SW enregistré',reg.scope);})
+      .catch(function(err){console.warn('SW erreur',err);});
+  });
+}
+
+// === INDICATEUR HORS-LIGNE ===
+function updateOfflineIndicator(){
+  var existing=document.getElementById('offline-indicator');
+  if(!navigator.onLine){
+    if(!existing){
+      var bar=document.createElement('div');
+      bar.id='offline-indicator';
+      bar.style.cssText='position:fixed;top:0;left:0;right:0;background:#3a3a52;color:#e8a87c;text-align:center;padding:8px;font-size:12px;font-weight:600;z-index:9998;letter-spacing:1px';
+      bar.innerHTML='⚠ Mode hors-ligne — votre carte reste accessible';
+      document.body.insertBefore(bar,document.body.firstChild);
+    }
+  } else if(existing){
+    existing.remove();
+  }
+}
+window.addEventListener('online',updateOfflineIndicator);
+window.addEventListener('offline',updateOfflineIndicator);
+updateOfflineIndicator();
+
+// === CACHE DE L'ÉTAT CLIENT (pour affichage offline) ===
+function cacheClientState(){
+  if(state.client && state.loggedIn){
+    safeLocalSet('cache_client',JSON.stringify(state.client));
+    safeLocalSet('cache_transactions',JSON.stringify(state.transactions||[]));
+    safeLocalSet('cache_clientPoints',JSON.stringify(state.clientPoints||{}));
+    safeLocalSet('cache_products',JSON.stringify(state.products||[]));
+    safeLocalSet('cache_recompensesNiveaux',JSON.stringify(state.recompensesNiveaux||[]));
+    safeLocalSet('cache_recompenseVip',JSON.stringify(state.recompenseVip||null));
+    safeLocalSet('cache_filleuls',JSON.stringify(state.filleuls||[]));
+    safeLocalSet('cache_parrainInfo',JSON.stringify(state.parrainInfo||null));
+    safeLocalSet('cache_timestamp',Date.now().toString());
+  }
+}
+
+function tryRestoreOfflineState(){
+  // Si on est hors-ligne ET pas connecté ET qu'on a un cache → restaurer
+  if(!navigator.onLine && !state.loggedIn){
+    var cachedClient=safeLocalGet('cache_client');
+    if(cachedClient){
+      try{
+        state.client=JSON.parse(cachedClient);
+        state.transactions=JSON.parse(safeLocalGet('cache_transactions')||'[]');
+        state.clientPoints=JSON.parse(safeLocalGet('cache_clientPoints')||'{}');
+        state.products=JSON.parse(safeLocalGet('cache_products')||'[]');
+        state.recompensesNiveaux=JSON.parse(safeLocalGet('cache_recompensesNiveaux')||'[]');
+        state.recompenseVip=JSON.parse(safeLocalGet('cache_recompenseVip')||'null');
+        state.filleuls=JSON.parse(safeLocalGet('cache_filleuls')||'[]');
+        state.parrainInfo=JSON.parse(safeLocalGet('cache_parrainInfo')||'null');
+        state.loggedIn=true;
+        var ts=safeLocalGet('cache_timestamp');
+        if(ts){
+          var age=Math.floor((Date.now()-parseInt(ts,10))/(1000*60));
+          showToast('📵 Données en cache (il y a '+age+' min)','#e8a87c');
+        }
+        return true;
+      }catch(e){return false;}
+    }
+  }
+  return false;
+}
+
+// Tenter de restaurer depuis le cache au chargement, puis render
+tryRestoreOfflineState();
 
 render();
 </script>

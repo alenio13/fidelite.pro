@@ -7,7 +7,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-<script src="/shared.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#1e1e2e;color:#f5f2ee;font-family:'Helvetica Neue',sans-serif;min-height:100vh}
@@ -94,6 +93,53 @@ const SHOP_NAME    = "La craquante de lesigny";
 let PATRON_PWD = "patron2024"; // sera remplacé par la valeur Supabase
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+const LEVELS=[
+  {name:"Bronze",  min:0,    max:499,      color:"#c8956c"},
+  {name:"Argent",  min:500,  max:999,      color:"#b0bec5"},
+  {name:"Or",      min:1000, max:1999,     color:"#f9d056"},
+  {name:"Platine", min:2000, max:Infinity, color:"#e0e0ff"},
+];
+const LEVEL_ORDER=["Bronze","Argent","Or","Platine"];
+const NOUVEAU={name:"Nouveau",min:0,max:0,color:"#888"};
+
+// Construit la liste des niveaux à partir des seuils de récompenses (table recompenses_niveaux).
+// Si aucune récompense chargée → fallback sur les LEVELS hardcodés.
+function buildLevels(){
+  if(!state.recompensesNiveaux||!state.recompensesNiveaux.length) return LEVELS.slice();
+  const recs=state.recompensesNiveaux
+    .filter(r=>LEVEL_ORDER.includes(r.niveau)&&r.points_requis!=null)
+    .slice()
+    .sort((a,b)=>a.points_requis-b.points_requis);
+  if(!recs.length) return LEVELS.slice();
+  const dyn=recs.map(r=>{
+    const base=LEVELS.find(l=>l.name===r.niveau);
+    return {name:r.niveau,min:r.points_requis,color:base?base.color:"#c8956c"};
+  });
+  for(let i=0;i<dyn.length;i++){
+    dyn[i].max=(i+1<dyn.length)?dyn[i+1].min-1:Infinity;
+  }
+  return dyn;
+}
+
+function getLevel(p){
+  const dyn=buildLevels();
+  if(!dyn.length||p<dyn[0].min) return {...NOUVEAU,max:(dyn[0]?dyn[0].min-1:0)};
+  return dyn.find(l=>p>=l.min&&p<=l.max)||dyn[dyn.length-1];
+}
+
+function getNextLevel(p){
+  const dyn=buildLevels();
+  if(!dyn.length) return null;
+  if(p<dyn[0].min) return dyn[0];
+  for(let i=0;i<dyn.length;i++){
+    if(p>=dyn[i].min&&p<=dyn[i].max) return dyn[i+1]||null;
+  }
+  return null;
+}
+
+function getBadgeClass(pts){const n=getLevel(pts).name;if(n==='Nouveau')return 'badge badge-nouveau';return n==='Argent'?'badge badge-argent':n==='Or'?'badge badge-or':n==='Platine'?'badge badge-platine':'badge'}
+function today(){return new Date().toISOString().split('T')[0]}
+function oneYearAgo(){const d=new Date();d.setFullYear(d.getFullYear()-1);return d.toISOString().split('T')[0]}
 function thisMonth(){return new Date().toISOString().slice(0,7)}
 
 // Points valides (non expirés = dans les 12 derniers mois)
@@ -232,6 +278,13 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'){if(barcodeBuffer.startsWith('FL|')||barcodeBuffer.startsWith('FL-'))handleQRScan(barcodeBuffer);barcodeBuffer='';}
   else if(e.key.length===1){barcodeBuffer+=e.key;clearTimeout(barcodeTimer);barcodeTimer=setTimeout(()=>{barcodeBuffer='';},200);}
 });
+function generateQR(clientId){
+  setTimeout(()=>{
+    const div=document.getElementById('qr-div-'+clientId);
+    if(!div||div.querySelector('canvas'))return;
+    new QRCode(div,{text:'FL-'+clientId,width:180,height:180,colorDark:'#000000',colorLight:'#ffffff'});
+  },100);
+}
   async function loadConfig(){
   const {data}=await sb.from('config').select('*');
   (data||[]).forEach(c=>{
@@ -717,6 +770,136 @@ for(const b of bonusCartItems){
   setTimeout(()=>{state.step='catalog';state.client=null;state.transactions=[];state.clientPoints={};state.colisToday=false;render();},2500);
 }
 
+// ── CLIENT VIEW ───────────────────────────────────────────────────────────────
+function renderClient(){
+  if(!state.client)return '<div class="done-screen"><div style="font-size:40px">👤</div><div style="font-size:15px;color:#555;text-align:center">Connectez-vous depuis l\'écran d\'accueil</div><button onclick="logout()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#c8956c;border-radius:12px;padding:12px 24px;font-size:14px;cursor:pointer">← Retour</button></div>';
+  const c=state.client;
+  const level=getLevel(c.points);
+  const nextLevel=LEVELS[LEVELS.indexOf(level)+1];
+  let html='<div class="tabs">';
+  [{id:'card',l:'🎴 Carte'},{id:'jauges',l:'📊 Points'},{id:'history',l:'📋 Historique'}].forEach(t=>{
+    html+='<button class="tab '+(state.clientTab===t.id?'active':'')+'" style="'+(state.clientTab===t.id?'color:'+level.color+';border-color:'+level.color+'44':'')+'" onclick="state.clientTab=\''+t.id+'\';render()">'+t.l+'</button>';
+  });
+  html+='</div>';
+  if(state.clientTab==='card')html+=renderClientCard(c,level,nextLevel);
+  if(state.clientTab==='jauges')html+=renderClientJauges();
+  if(state.clientTab==='history')html+=renderClientHistory();
+  return html;
+}
+
+function renderClientCard(c,level,nextLevel){
+  const prog=nextLevel?Math.min(100,((c.points-level.min)/(nextLevel.min-level.min))*100):100;
+  const isVip=c.vip;
+  let html='';
+
+  // Badge VIP
+  if(isVip){
+    html+='<div class="vip-badge-big">'+
+      '<span style="font-size:22px">★</span>'+
+      '<div><div style="font-size:14px;color:#ffd700;font-weight:700">Client VIP — Bonus +'+c.vip_bonus+'%</div>'+
+      '<div style="font-size:12px;color:#a8900a;margin-top:2px">Points globaux multipliés à chaque achat</div></div></div>';
+  }
+
+  html+='<div class="card-visual" style="box-shadow:0 0 0 1px '+(isVip?'rgba(255,215,0,.3)':level.color+'33')+',0 20px 50px rgba(0,0,0,.6)'+( isVip?',0 0 40px rgba(255,215,0,.1)':'')+'">'+
+    '<div style="position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,'+(isVip?'rgba(255,215,0,.1)':level.color+'18')+' 0%,transparent 70%);pointer-events:none"></div>'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">'+
+    '<div><div style="font-size:9px;letter-spacing:3px;color:'+(isVip?'#ffd700':level.color)+';text-transform:uppercase;margin-bottom:3px">Carte Fidélité'+(isVip?' ★ VIP':'')+'</div>'+
+    '<div style="font-size:16px;font-weight:700;font-family:Georgia,serif;color:#e8e2d8">'+SHOP_NAME+'</div></div>'+
+    '<span class="'+getBadgeClass(c.points)+'">'+level.name+'</span></div>'+
+    '<div style="font-size:48px;font-weight:800;color:'+(isVip?'#ffd700':level.color)+';letter-spacing:-3px;line-height:1;text-align:center;margin-bottom:4px">'+c.points.toLocaleString()+'</div>'+
+    '<div style="font-size:10px;color:#555;letter-spacing:2px;text-transform:uppercase;text-align:center">points globaux</div>'+
+    '<div class="progress-bar"><div class="progress-fill" style="width:'+prog+'%;background:linear-gradient(90deg,'+(isVip?'rgba(255,215,0,.6),#ffd700':level.color+'66,'+level.color)+')"></div></div>'+
+    (nextLevel?'<div style="font-size:11px;color:#444;text-align:right;margin-bottom:14px">'+(nextLevel.min-c.points)+' pts avant '+nextLevel.name+'</div>':'<div style="margin-bottom:14px"></div>')+
+    '<div style="display:flex;justify-content:space-between;align-items:center">'+
+    '<div><div style="font-size:9px;color:#3a3a3a;letter-spacing:2px;text-transform:uppercase">Titulaire</div>'+
+    '<div style="font-size:14px;letter-spacing:1px;margin-top:2px;color:#ccc">'+c.nom+'</div></div>'+
+    '<div style="font-family:monospace;font-size:10px;color:#2a2a2a">'+c.telephone+'</div></div></div>'+
+    '<div class="qr-section"><div class="section-title">Mon QR code</div>'+
+    '<div id="qr-div-'+c.id+'" class="qr-div"></div>'+
+    '<div style="font-size:12px;color:#555;text-align:center">Montrez ce code au caissier</div>'+
+    '<button onclick="printQR()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#c8956c;border-radius:10px;padding:10px 20px;font-size:13px;cursor:pointer">🖨️ Imprimer ma carte</button></div>';
+
+  // Récompenses niveaux
+  if(state.recompensesNiveaux&&state.recompensesNiveaux.length>0){
+    // Niveau actuel calculé dynamiquement (par les seuils de récompenses), pas depuis c.niveau_actuel
+    const levelActuelDyn=getLevel(c.points).name;
+    const idxActuelDyn=LEVEL_ORDER.indexOf(levelActuelDyn); // -1 si "Nouveau"
+    html+='<div style="background:#111;border:1px solid #1a1a1a;border-radius:16px;padding:16px 20px;margin-top:14px">'+
+      '<div class="section-title">Progression & Récompenses</div>';
+    if(levelActuelDyn==='Nouveau'){
+      const firstReward=state.recompensesNiveaux.slice().sort((a,b)=>a.points_requis-b.points_requis)[0];
+      html+='<div style="background:rgba(150,150,150,.08);border:1px solid rgba(150,150,150,.2);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#888">'+
+        '✦ Nouveau client — '+(firstReward?'encore '+(firstReward.points_requis-c.points)+' pts pour débloquer '+firstReward.niveau:'pas encore de récompense configurée')+
+        '</div>';
+    }
+    LEVEL_ORDER.forEach((niv,i)=>{
+      const r=state.recompensesNiveaux.find(x=>x.niveau===niv);
+      const current=levelActuelDyn===niv;
+      const done=idxActuelDyn>i;
+      const lv=LEVELS.find(l=>l.name===niv);
+      html+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;opacity:'+(done?0.4:1)+'">'+
+        '<div style="width:10px;height:10px;border-radius:50%;background:'+(done?'#333':current?lv.color:'#222')+';box-shadow:'+(current?'0 0 8px '+lv.color:'none')+';flex-shrink:0"></div>'+
+        '<div style="flex:1"><div style="font-size:13px;color:'+(current?lv.color:done?'#444':'#777')+';font-weight:'+(current?700:400)+'">'+niv+(current?' ← Niveau actuel':'')+'</div>'+
+        (r?'<div style="font-size:11px;color:#555;margin-top:1px">🎁 '+r.description+' ('+r.points_requis+' pts)</div>':'')+
+        '</div>'+(done?'<span style="font-size:11px;color:#7ec87e">✓ Fait</span>':'')+
+        (current&&r&&c.points>=r.points_requis?'<span style="font-size:11px;color:#7ec87e">🎉 Dispo !</span>':'')+'</div>';
+    });
+    html+='<div style="background:#0d0d0d;border-radius:10px;padding:10px 14px;font-size:12px;color:#444;line-height:1.6;margin-top:8px">💬 Demandez au caissier d\'utiliser votre récompense pour passer au niveau suivant.</div></div>';
+  }
+
+  // Expiration points
+  const cutoff=oneYearAgo();
+  const expiringSoon=(state.transactions||[]).filter(t=>{
+    const d=t.created_at&&t.created_at.split('T')[0];
+    const limit=new Date(d);limit.setFullYear(limit.getFullYear()+1);
+    const daysLeft=Math.ceil((limit-new Date())/(1000*60*60*24));
+    return daysLeft>0&&daysLeft<=30&&t.points>0&&t.type==='earn';
+  });
+  if(expiringSoon.length>0){
+    const ptsExpiring=expiringSoon.reduce((s,t)=>s+t.points,0);
+    html+='<div style="background:rgba(232,112,112,.08);border:1px solid rgba(232,112,112,.3);border-radius:12px;padding:12px 16px;margin-top:14px">'+
+      '<div style="font-size:13px;color:#e87070;font-weight:600;margin-bottom:4px">⚠️ Points bientôt expirés</div>'+
+      '<div style="font-size:12px;color:#888">'+ptsExpiring+' pts expirent dans moins de 30 jours.<br>Revenez nous voir pour les utiliser !</div></div>';
+  }
+
+  return html;
+}
+
+function renderClientJauges(){
+  if(!state.products.length)return '<div style="text-align:center;color:#333;padding:24px">Chargement...</div>';
+  let html='<div class="section-title">Mes points par produit</div>';
+  state.products.forEach(p=>{
+    const val=state.clientPoints[p.id]||0;
+    const prog=(val/p.seuil)*100;
+    const restant=p.seuil-val;
+    html+='<div style="background:#111;border:1px solid #1e1e1e;border-radius:12px;padding:12px 16px;margin-bottom:10px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
+      '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">'+p.icon+'</span>'+
+      '<span style="font-size:14px;color:#ddd;font-weight:500">'+p.nom+'</span></div>'+
+      '<div style="font-size:15px;font-weight:700;color:#c8956c;font-family:monospace">'+val+'/'+p.seuil+'</div></div>'+
+      '<div class="gauge-bar"><div class="gauge-fill" style="width:'+Math.min(100,prog)+'%;background:'+(prog>=80?'#7ec87e':prog>=50?'#f9d056':'#c8956c')+'"></div></div>'+
+      '<div style="font-size:11px;color:#444;margin-top:5px">'+(restant===0?'🎉 Récompense disponible !':restant+' achat'+(restant>1?'s':'')+' avant 1 '+p.nom+' offert')+'</div></div>';
+  });
+  html+='<div style="background:#111;border:1px solid #1e1e1e;border-radius:12px;padding:12px 16px;margin-top:4px;font-size:12px;color:#444;line-height:1.7">💬 Montrez votre QR code au caissier pour faire valoir vos récompenses.</div>';
+  return html;
+}
+
+function renderClientHistory(){
+  const cutoff=oneYearAgo();
+  let html='<div class="section-title">30 dernières transactions</div>';
+  html+='<div style="background:#111;border:1px solid #1e1e1e;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#555">⏳ Les points expirent 1 an après chaque transaction</div>';
+  html+='<div class="tx-list">';
+  if(!state.transactions.length)html+='<div style="text-align:center;color:#252525;font-size:13px;padding:24px">Aucune transaction</div>';
+  state.transactions.slice(0,30).forEach(tx=>{
+    const txDate=tx.created_at&&tx.created_at.split('T')[0];
+    const expired=txDate&&txDate<cutoff;
+    html+='<div class="tx-row" style="'+(expired?'opacity:.4':'')+'">'+
+      '<div><div style="font-size:13px;color:#ddd;margin-bottom:2px">'+tx.label+'</div>'+
+      '<div style="font-size:11px;color:#444">'+new Date(tx.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})+(expired?' · <span style="color:#e87070">Expiré</span>':'')+'</div></div>'+
+      '<div style="font-family:monospace;font-weight:700;font-size:13px;color:'+(expired?'#333':tx.type==='redeem'?'#e87070':tx.type==='bonus'?'#f9d056':'#7ec87e')+'">'+(tx.points>0?'+':'')+tx.points+' pt'+(Math.abs(tx.points)>1?'s':'')+'</div></div>';
+  });
+  return html+'</div>';
+}
 
 // ── PATRON ────────────────────────────────────────────────────────────────────
 async function loadPatronData(){
@@ -1354,4 +1537,170 @@ function printQR(){
   const canvas=div?.querySelector('canvas');
   if(!canvas)return;
   const win=window.open('','_blank');
-  win.document.write('<html><head><title>C
+  win.document.write('<html><head><title>Carte — '+state.client.nom+'</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif}.card{border:2px solid #c8956c;border-radius:16px;padding:24px;text-align:center;width:280px}</style></head><body><div class="card"><div style="font-size:16px;font-weight:bold;color:#1a1410;margin-bottom:4px">'+SHOP_NAME+'</div><div style="font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Carte Fidélité</div><img src="'+canvas.toDataURL()+'" width="160" height="160"><div style="font-size:16px;font-weight:bold;margin-top:12px">'+state.client.nom+'</div><div style="font-size:11px;color:#aaa;margin-top:6px">Présentez ce QR code en caisse</div></div></body></html>');
+  win.document.close();win.print();
+}
+  async function envoyerDemandeVip(){
+  if(!state.client)return;
+  const anniv=document.getElementById('demande-anniv')?.value||null;
+  const {error}=await sb.from('demandes_vip').insert({
+    client_id:state.client.id,
+    client_nom:state.client.nom,
+    telephone:state.client.telephone,
+    anniversaire:anniv||null,
+    statut:'en_attente'
+  });
+  if(error)return showToast('Demande déjà envoyée','#e87070');
+  document.getElementById('demande-vip-form').style.display='none';
+  showToast('✅ Demande VIP envoyée au patron !','#ffd700');
+}
+ async function marquerAnniversaire(){
+  if(!state.client)return;
+  const caissierNom=state.caissierActif?state.caissierActif.nom:null;
+  const anneeActuelle=new Date().getFullYear();
+  // Stocker l'année où la récompense a été donnée
+  await sb.from('clients').update({anniversaire_offert:anneeActuelle}).eq('id',state.client.id);
+  await sb.from('transactions').insert({
+    client_id:state.client.id,
+    label:'🎂 Récompense anniversaire offerte',
+    points:0,
+    type:'bonus',
+    caissier_nom:caissierNom
+  });
+  state.client.anniversaire_offert=anneeActuelle;
+  showToast('🎂 Anniversaire enregistré !','#ffd700');
+  render();
+}
+  async function accepterVip(demandeId,clientId,anniversaire){
+  await sb.from('clients').update({vip:true,vip_bonus:state.vipBonusDefaut||10,...(anniversaire?{anniversaire}:{})}).eq('id',clientId);
+  await sb.from('demandes_vip').update({statut:'accepte'}).eq('id',demandeId);
+  showToast('★ Client passé en VIP !','#ffd700');
+  await loadPatronData();render();
+}
+async function refuserVip(demandeId){
+  await sb.from('demandes_vip').update({statut:'refuse'}).eq('id',demandeId);
+  showToast('Demande refusée','#e87070');
+  await loadPatronData();render();
+}
+  async function safeQuery(fn){
+  try{return await fn();}
+  catch(e){
+    showToast('❌ Problème de connexion — réessayez','#e87070');
+    console.error(e);
+    return {data:null,error:e};
+  }
+}
+  async function changerMotDePasse(){
+  const actuel=document.getElementById('pwd-actuel')?.value;
+  const nouveau=document.getElementById('pwd-nouveau')?.value;
+  const confirm=document.getElementById('pwd-confirm')?.value;
+  if(!actuel||!nouveau||!confirm)return showToast('Remplissez tous les champs','#e87070');
+  if(actuel!==PATRON_PWD)return showToast('Mot de passe actuel incorrect','#e87070');
+  if(nouveau!==confirm)return showToast('Les mots de passe ne correspondent pas','#e87070');
+  if(nouveau.length<6)return showToast('Mot de passe trop court (6 caractères min)','#e87070');
+  await sb.from('config').update({valeur:nouveau}).eq('cle','patron_pwd');
+  PATRON_PWD=nouveau;
+  showToast('✅ Mot de passe changé !','#8fc98a');
+  document.getElementById('pwd-actuel').value='';
+  document.getElementById('pwd-nouveau').value='';
+  document.getElementById('pwd-confirm').value='';
+}
+  async function sauvegarderPointsEmail(){
+  const pts=parseInt(document.getElementById('offre-points')?.value)||0;
+  if(!pts||pts<=0)return showToast('Entrez un nombre de points','#e87070');
+  await sb.from('config').upsert({cle:'points_email',valeur:String(pts)},{onConflict:'cle'});
+  showToast('✅ Récompense email enregistrée : +'+pts+' pts !','#8fc98a');
+    state.pointsEmail=pts;
+render();
+}
+  async function envoyerEmail(destinataire, nom, sujet, contenu){
+  const {data:config}=await sb.from('config').select('*');
+  const cfg={};
+  (config||[]).forEach(c=>{cfg[c.cle]=c.valeur;});
+  if(!cfg.brevo_api_key)return;
+  await fetch('https://api.brevo.com/v3/smtp/email',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'api-key':cfg.brevo_api_key
+    },
+    body:JSON.stringify({
+      sender:{name:cfg.brevo_sender_nom||SHOP_NAME,email:cfg.brevo_sender_email},
+      to:[{email:destinataire,name:nom}],
+      subject:sujet,
+      htmlContent:contenu
+    })
+  });
+}
+
+async function envoyerOffreEmail(){
+  const sujet=document.getElementById('offre-sujet')?.value?.trim();
+  const message=document.getElementById('offre-message-email')?.value?.trim();
+  const pts=parseInt(document.getElementById('offre-points-email')?.value)||0;
+  if(!sujet||!message)return showToast('Remplissez le sujet et le message','#e87070');
+  const clientsAvecEmail=(state.allClients||[]).filter(c=>c.email);
+  if(!clientsAvecEmail.length)return showToast('Aucun client avec email','#e87070');
+  if(!confirm('Envoyer un email à '+clientsAvecEmail.length+' client(s) ?'))return;
+  let count=0;
+  for(const c of clientsAvecEmail){
+    const contenuHtml='<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px">'+
+      '<div style="background:#1e1e2e;border-radius:16px;padding:24px;color:#f5f2ee">'+
+      '<div style="font-size:22px;font-weight:700;color:#e8a87c;margin-bottom:4px">'+SHOP_NAME+'</div>'+
+      '<div style="font-size:12px;color:#888;margin-bottom:20px;text-transform:uppercase;letter-spacing:2px">Programme Fidélité</div>'+
+      '<div style="font-size:16px;margin-bottom:16px">Bonjour <strong>'+c.nom+'</strong>,</div>'+
+      '<div style="font-size:14px;color:#ddd;line-height:1.7;margin-bottom:20px">'+message+'</div>'+
+      (pts>0?'<div style="background:rgba(200,149,108,.2);border:1px solid rgba(200,149,108,.4);border-radius:12px;padding:14px;text-align:center;margin-bottom:20px">'+
+      '<div style="font-size:24px;font-weight:800;color:#e8a87c">+'+pts+' pts</div>'+
+      '<div style="font-size:12px;color:#aaa">offerts sur votre carte fidélité</div></div>':'')+
+      '<div style="font-size:12px;color:#666;margin-top:20px;border-top:1px solid #333;padding-top:16px">'+
+      'Vous recevez cet email car vous êtes membre du programme fidélité de '+SHOP_NAME+'.</div>'+
+      '</div></div>';
+    await envoyerEmail(c.email,c.nom,sujet,contenuHtml);
+    if(pts>0){
+      const newPts=(c.points||0)+pts;
+      await sb.from('clients').update({points:newPts}).eq('id',c.id);
+      await sb.from('transactions').insert({client_id:c.id,label:'📧 '+sujet+' (+'+pts+' pts)',points:pts,type:'bonus',caissier_nom:'Patron'});
+    }
+    count++;
+  }
+  showToast('✅ Email envoyé à '+count+' clients !','#8fc98a');
+  await loadPatronData();render();
+}
+   async function sauvegarderVipBonusDefaut(){
+  const val=parseInt(document.getElementById('vip-bonus-defaut')?.value)||10;
+  await sb.from('config').upsert({cle:'vip_bonus_defaut',valeur:String(val)},{onConflict:'cle'});
+  state.vipBonusDefaut=val;
+  showToast('✅ Bonus VIP par défaut : +'+val+'%','#ffd700');
+  render();
+}
+async function sauvegarderPointsParrainage(){
+  const valPts=parseInt(document.getElementById('points-parrainage-input')?.value);
+  const valLim=parseInt(document.getElementById('limite-parrainage-input')?.value);
+  const updates=[];
+  let msg=[];
+  if(!isNaN(valPts)){
+    if(valPts<0||valPts>500)return showToast('Récompense invalide (0–500)','#e87070');
+    updates.push(sb.from('config').upsert({cle:'points_parrainage',valeur:String(valPts)},{onConflict:'cle'}));
+    state.pointsParrainage=valPts;
+    msg.push('Récompense : +'+valPts+' pts');
+  }
+  if(!isNaN(valLim)){
+    if(valLim<1||valLim>100)return showToast('Limite invalide (1–100)','#e87070');
+    updates.push(sb.from('config').upsert({cle:'points_parrainage_limite_mensuelle',valeur:String(valLim)},{onConflict:'cle'}));
+    state.limiteParrainage=valLim;
+    msg.push('Limite : '+valLim+'/30j');
+  }
+  if(!updates.length)return showToast('Aucun champ rempli','#e87070');
+  await Promise.all(updates);
+  showToast('✅ '+msg.join(' · '),'#e8a87c');
+  render();
+}
+function showToast(msg,color){
+  color=color||'#8fc98a';
+  state.toast={msg,color};render();
+  setTimeout(()=>{state.toast=null;render();},3500);
+}
+loadConfig().then(()=>render());
+</script>
+</body>
+</html>
